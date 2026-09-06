@@ -1,28 +1,35 @@
 fn main() {
-    // en rust les variables sont immutables par défaut. il faut ajouter mut pour les rendre mutable
-    // let mut x = 5;
-    // println!("X = {}", x);
+  // pour les variables locales (let), l'annotation de type est requise (et souhaitable) seulement quand le type ne peut être correctement inféré exemple avec parse
+  // let guess = "42".parse().expect("Not a number"); // error[E0284]: type annotations needed
 
-    // x = 6;
-    // println!("The value of x is {x}");
+  // quand le type est ambigu (ne peut pas être inféré de manière fiable), l'annotation de type est nécessaire
+  let _guess: u32 = "42".parse().expect("Not a number"); // le préfixe _ signifie que la non utilisation de la variable est intentionnelle, pas de warning remonté par le compilateur
 
-    // les constantes sont toujours immuables et doivent toujours avoir un type
-    // const THREE_HOURS_IN_SECONDS: u32 = 60 * 60 * 3;
+  // SCALAIRES
+  // un type scalaire représente une seule valeur. Les types scalaires en rust sont: integers, floating-point numbers, Booleans, et characters
+  
+  // Integers
+  // i = signed, u => unsigned;
+  // default integer value is u32
+  // let _value1: i8 // 8bit signed de -128 à +127
+  // let _value2: u8 // 8 bit unsigned de 0 à 255
 
-    // on peut shadow une variable let immutable en la redéclarant. ça permet de changer son type qui est inféré
-    // let spaces = "didadidadoum";
+  // isize et usize dépendent de l'architecture de l'ordinateur qui fait tourner le programme. 64bits sur une architecture 64-bit ou 32 bit sur une archi 32-bit
+  
+  // Floating numbers; la valeur par défaut est f64 car plus ou moins aussi rapide mais avec davantage de précision
+  // let x = 2.0; // f64
+  // let y: f32 = 3.0; // f32
+  
+  // boolean
+  // let t = true;
+  // let f: bool = false; // annotation explicite
+  
 
-    // {
-    //     let spaces = spaces.len();
-    //     println!("spaces length in inner scope is {spaces}");
-    // }
+  // character - valeur scalaire unicode; il se déclare avec des guillemets simples
+  let c = 'z';
+  let z: char = 'Z'; // annotation explicite
+  let heart_eyed_cat = '😻';
+  let oups = "z" // type string pas char, à cause des guillements doubles
 
-    // // le shadow disparait en dehors de son scope, la variable revient à sa valeur initiale
-    // println!("spaces length is {spaces}");
-    // 
-
-    // par contre on ne peut pas changer le type d'un let mutable
-
-    let mut spaces = "coucou";
-    spaces = spaces.len(); // error[E0308]: mismatched types
+  
 }
