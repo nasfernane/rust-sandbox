@@ -7,7 +7,7 @@ fn main() {
 
   // SCALAIRES
   // un type scalaire représente une seule valeur. Les types scalaires en rust sont: integers, floating-point numbers, Booleans, et characters
-  
+
   // Integers
   // i = signed, u => unsigned;
   // default integer value is u32
@@ -15,21 +15,21 @@ fn main() {
   // let _value2: u8 // 8 bit unsigned de 0 à 255
 
   // isize et usize dépendent de l'architecture de l'ordinateur qui fait tourner le programme. 64bits sur une architecture 64-bit ou 32 bit sur une archi 32-bit
-  
+
   // Floating numbers; la valeur par défaut est f64 car plus ou moins aussi rapide mais avec davantage de précision
   // let x = 2.0; // f64
   // let y: f32 = 3.0; // f32
-  
+
   // boolean
   // let t = true;
   // let f: bool = false; // annotation explicite
-  
+
 
   // character - valeur scalaire unicode; il se déclare avec des guillemets simples
   let c = 'z';
   let z: char = 'Z'; // annotation explicite
   let heart_eyed_cat = '😻';
-  let oups = "z" // type string pas char, à cause des guillements doubles
+  let oupss = "z" // type string pas char, à cause des guillements doubles
 
-  
+
 }
