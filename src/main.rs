@@ -1,49 +1,105 @@
 fn main() {
-    println!("Hello, world!");
+    let number = 10;
 
-    print_number(5);
-    print_labelled_number(45, 'h');
-
-    // FONCTIONS
-
-    // différence entre déclaration et expression
-    // une déclaration ne retourne pas de valeur, on ne peut donc pas faire
-    // let x = let y = 6; => error: expected expression, found `let` statement
-
-    // une expression peut faire partie d'une déclaration mais retourne une valeur
-    // 5 + 6 est une expression qui s'évalue à 11
-    // appeler une fonction, une macro ou l'ouverture d'un bloc sont des expressions
-    //
-    // let y = {
-    //     let x = 3;
-    //     x + 1 // pas besoin d'accolade ici, c'est la valeur retournée par le bloc
-    // };
-
-    // println!("The value of y is {y}");
-
-    // fonctions avec valeurs de retours
-    // function_name(...parameters) -> return_type {}
-    // fn amazing_function() -> i8 {
-    //     6
+    // if number < 10 {
+    //     println!("Small number");
+    // } else {
+    //     println!("big number !");
     // }
 
-    // let amazing_number = amazing_function();
+    // contrairement en js il faut que la condition soit un booléen
+    // if number {
+    //     // ==> error[E0308]: mismatched types
+    //     println!("Small number");
+    // } else {
+    //     println!("big number !");
+    // }
 
-    // println!("My amazing number is {amazing_number}");
+    // ici if est une expression qui renvoie une valeur, on s'en sert comme un ternaire
+    // let conditional_number = if number < 10 { number } else { 50 };
+    // println!("Conditional number is {conditional_number}");
 
-    let incremental_number = add_one(5);
-    println!("Incremental number is {incremental_number}");
-}
+    // le type de la variable dépend donc du type de valeur renvoyé par le if, il faut que les types soient homogènes
+    // let conditional_number = if number < 10 { number } else { "coucou" };
+    // println!("Conditional number is {conditional_number}");
+    // error[E0308]: `if` and `else` have incompatible types
 
-fn print_number(number: i32) {
-    println!("Wow {number} is a beautiful number");
-}
+    // LOOPS
+    //
+    // infinite loop
+    // loop {
+    //     println!("To infinity and beyond...")
+    // }
 
-fn print_labelled_number(value: i32, unit_label: char) {
-    println!("Wow {value}{unit_label} is a a lot of {unit_label}");
-}
+    // let mut counter = 0;
 
-fn add_one(x: i32) -> i32 {
-    x + 1 // si on ajoute un semi-colon => ^^^ expected `i32`, found `()` car la fonction ne retourne plus rien
-    // return ne doit être utilisé que pour des retours anticipés
+    // let result = loop {
+    //     counter += 1;
+    // break permet de sortir de la boucle, mais return sort toujours de la fonction
+    //     if counter >= 10 {
+    //         break counter * 2;
+    //     }
+    // };
+
+    // println!("Result is {result}");
+
+    // break
+
+    // on peut nommer une boucle avec 'name, ce qui permet de les cibler avec un break dans une autre boucle imbriquée ex:
+    // let mut count = 0;
+
+    // 'counting_up: loop {
+    //     println!("Count = {count}");
+
+    //     let mut remaining = 10;
+
+    //     loop {
+    //         println!("Remaining = {remaining}");
+    //         if remaining == 9 {
+    //             break;
+    //         }
+
+    //         if count == 2 {
+    //             break 'counting_up;
+    //         }
+
+    //         remaining -= 1;
+    //     }
+
+    //     count += 1;
+    // }
+
+    // println!("End count = {count}");
+
+    // boucles conditionnelles
+    // let mut number = 0;
+
+    // while number < 3 {
+    //     println!("Number is {number}");
+    //     number += 1;
+    // }
+
+    // println!("Final number is {number}");
+
+    // boucler sur une collection
+    let arr = [10, 20, 30, 40, 50];
+
+    // let mut index = 0;
+
+    // while index < arr.len() {
+    //     println!("Index value is {}", arr[index]);
+
+    //     index += 1;
+    // }
+
+    // ou alors de manière plus simple
+    // for value in arr {
+    //     println!("Value is {value}");
+    // }
+    //
+    // utiliser une boucle for avec une range:
+
+    for value in (1..4).rev() {
+        println!("Value is {value}");
+    }
 }
