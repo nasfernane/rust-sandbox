@@ -86,10 +86,18 @@ désamorcer au moment où ils se présentent :
 
 ## Contexte technique
 
-- Windows 11, PowerShell, toolchain `stable-x86_64-pc-windows-msvc` (pas de nightly)
-- Compilation manuelle avec `rustc` pour l'instant, **pas encore de projet Cargo**
-- Fichiers isolés à la racine, un par notion (`hello-world.rs`,
-  `formatted-prints.rs`), les `.exe`/`.pdb` sont les artefacts de compilation
+- macOS (Apple Silicon), zsh, toolchain `stable-aarch64-apple-darwin` (pas de
+  nightly). `rustc 1.98.1` au 2026-09-13 — vérifier avec `rustup show`.
+- **Projet Cargo** depuis le commit `3803c8f`. Les binaires sont au format
+  Mach-O, pas PE ; pas de `.pdb` (les symboles de debug vivent dans des `.dSYM`).
+- Sources dans `src/`, un fichier par notion, numérotées dans l'ordre d'étude
+  (`3-data-types.rs`, `5-control-flow.rs`…). `src/main.rs` est le binaire courant.
+  Artefacts de compilation dans `target/`.
+- `PROGRESS.md` à la racine recense les notions abordées — **le tenir à jour au
+  fil des sessions**, il sert de support aux quizz de révision.
+- Dépendance actuelle : `rand = "0.10.2"` — bien plus récente que le `0.8.5` du
+  Book, dont l'API a été renommée (`thread_rng` → `rng`, `gen_range` →
+  `random_range`). Toujours vérifier la version avant de suivre un tutoriel.
 
 ## Parcours d'apprentissage
 
@@ -101,7 +109,9 @@ Disponible hors-ligne sur sa machine via `rustup doc --book`.
 Bascule décidée le 2026-09-05, après le chapitre 1 de *Rust by Example*. Motif :
 ses questions portent systématiquement sur le **pourquoi** (rôle de Cargo,
 contenu d'un binaire, raison d'être des macros), un terrain que RBE ne couvre
-pas. Position actuelle : tout début de The Book.
+pas. Position actuelle au 2026-09-13 : chapitres 1 et 3 terminés, **chapitre 4
+(ownership) en cours**. Le chapitre 2 (jeu de devinettes) a été fait après le 3,
+sur suggestion du Book lui-même pour ceux qui veulent comprendre avant de coder.
 
 Ressources d'appoint :
 
@@ -111,17 +121,19 @@ Ressources d'appoint :
   soi-même, avec vérification automatique. Particulièrement adapté ici :
   c'est lui qui écrit le code, jamais toi
 
-Deux jalons à surveiller :
+Jalon en cours :
 
-- **Chapitre 2** (jeu de devinettes) — son premier vrai projet Cargo, et donc
-  la fin de la compilation manuelle avec `rustc`
 - **Chapitre 4** (*ownership*) — le seul concept sans aucun équivalent en JS,
   et le vrai mur du parcours. Prends-y le temps qu'il faut, quitte à ralentir
   franchement : tout le reste du langage en dépend
 
+Jalon franchi : **chapitre 2** (jeu de devinettes), son premier projet Cargo.
+
 Notions déjà abordées hors tutoriel : package manager et rôle de Cargo, contenu
-d'un binaire (format PE, sections, désassemblage, `.pdb`), fonctions vs macros,
-rôle sémantique du `;` et type unité `()`.
+d'un binaire (sections, désassemblage, `strings`), fonctions vs macros, rôle
+sémantique du `;` et type unité `()`, type `!` (*never*), paradigmes (fonctionnel
+vs impératif vs OO), nature du « type » en Rust vs JS/TS, traits `Display` /
+`Debug`, `E0599` comme symptôme d'un trait non importé. Détail dans `PROGRESS.md`.
 
 ## Langue
 

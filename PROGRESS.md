@@ -400,7 +400,5 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 
 - Écrire une fonction `i32 -> &str` renvoyant `"pair"` / `"impair"`, en
   utilisant `if` **comme expression** (sans `return`)
-- Si Rust n'a pas de `typeof`, comment `println!("{}", x)` sait-il afficher un
-  `i32` autrement qu'un `bool` ? (piste : macros + traits)
 - Qu'apporte une struct `Point` qu'un tuple `(i32, i32)` n'apporte pas ?
   (piste : types nominaux)
