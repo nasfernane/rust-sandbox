@@ -13,8 +13,8 @@
 |---|---|---|
 | 1 | Getting Started | ✅ fait |
 | 3 | Common Programming Concepts | ✅ fait |
-| 2 | Programming a Guessing Game | 🔄 **en cours** |
-| 4 | Understanding Ownership | ⏳ à venir — **le vrai mur** |
+| 2 | Programming a Guessing Game | ✅ fait |
+| 4 | Understanding Ownership | 🔄 **en cours** — le vrai mur |
 
 **Pourquoi ce détour 1 → 3 → 2 ?** Le Book lui-même suggère cet ordre à ceux qui
 préfèrent comprendre les fondations avant de coder un projet. Le chapitre 2 est
@@ -300,6 +300,117 @@ error[E0599]: no method named `random_range` found for struct `ThreadRng`
 
 ---
 
+## Chapitre 4 — Ownership (en cours)
+
+*Fichier : `src/main.rs`*
+
+### Les trois zones mémoire
+
+| Zone | Contenu | Libération |
+|---|---|---|
+| **Binaire** (lecture seule) | littéraux `&'static str` | jamais |
+| **Pile** (*stack*) | taille **connue à la compilation** | automatique, au dépilement |
+| **Tas** (*heap*) | taille inconnue ou variable | quand le propriétaire sort de portée |
+
+- ⚠️ **Le critère pile/tas est la taille connue à la compilation — PAS la
+  mutabilité.** Les quatre combinaisons existent : `let x = 5` (pile immuable),
+  `let mut x = 5` (pile mutable), `let s = String::from("hi")` (tas immuable),
+  `let mut s = String::new()` (tas mutable). Vérifié expérimentalement.
+- « taille inconnue à la compilation » ≠ « taille qui change ». La seconde
+  implique la première, jamais l'inverse (ex. `let s = lire_un_fichier();`).
+- **pile/tas** = décision de disposition, déduite du **type**, prise par le
+  compilateur. **`mut`** = permission d'écriture que l'on s'accorde. Deux axes
+  **indépendants**.
+### Pourquoi le tas est plus lent (mesuré : 0,7 ns vs 15,6 ns, **23×**)
+
+1. **Coût d'allocation** — le principal. Pile : déplacer le pointeur de pile,
+   *une* instruction (souvent déjà faite à l'entrée de la fonction). Tas :
+   appeler l'allocateur, qui doit **chercher** un bloc libre, tenir sa
+   comptabilité, gérer la fragmentation, parfois faire un appel système, et
+   rester thread-safe (verrous/atomiques). **La pile ne cherche jamais.**
+2. **Localité** — la pile réutilise les mêmes kilo-octets, toujours en cache L1.
+   Les objets du tas sont éparpillés → défauts de cache. Coût d'**accès**.
+3. **Indirection** — lire une `String` = deux accès mémoire (le pointeur, puis
+   sa cible). Une valeur de pile = un seul.
+
+💡 Le coût est réel mais modeste (~15 ns). Le danger est de le payer des
+millions de fois sans le savoir — d'où `clone()` **explicite** : Rust n'interdit
+pas la copie profonde, il oblige à l'écrire.
+
+- `String::from("hello")` occupe **trois** emplacements : le littéral dans le
+  binaire, le tampon copié sur le tas, la structure à 3 champs sur la pile.
+  Le texte existe en **deux exemplaires** à l'exécution.
+
+### Les trois règles
+
+1. Toute valeur a un **propriétaire** (*owner*)
+2. Un seul propriétaire à la fois
+3. Quand le propriétaire sort de portée, la valeur est **libérée**
+
+- ⚠️ La libération est automatique pour **toute** valeur possédante. Le trait
+  `Drop` n'en est pas la cause : c'est un **point d'accroche** pour exécuter du
+  code personnalisé au moment de la libération.
+
+### Move vs Copy — le même mécanisme
+
+> ⚠️ **Un *move* est une copie superficielle suivie d'une invalidation.
+> Une `Copy` est la même copie superficielle, sans invalidation.**
+
+| | Copie des bits | Source ensuite |
+|---|---|---|
+| `i32` (implémente `Copy`) | oui, 4 octets | **reste valide** |
+| `String` (pas `Copy`) | oui, 24 octets (`ptr`/`len`/`cap`) | **invalidée** |
+
+- Le type ne change pas l'opération de copie, il change le **verdict sur la
+  source**.
+- **Pourquoi invalider** : après la copie superficielle, deux structures
+  pointent vers le même tampon. Sans invalidation, les deux le libéreraient →
+  ***double free***, le bug que l'ownership existe pour éliminer.
+- `clone()` force la copie **profonde** (le tampon du tas aussi) — coût réel,
+  à envisager consciemment.
+- Erreur associée : `error[E0382]: borrow of moved value`
+
+### Pourquoi `Copy` et `Drop` sont incompatibles
+
+`error[E0184]: Copy not allowed on types with destructors` (vérifié).
+
+```
+possède une ressource → doit la libérer → un seul propriétaire → pas de Copy
+ne possède rien       → rien à libérer  → autant de copies qu'on veut → Copy
+```
+
+- `Copy` dit « dupliquer les bits donne une seconde valeur indépendante ».
+  `Drop` dit « cette valeur possède une ressource à nettoyer ». Ensemble : deux
+  propriétaires qui nettoient **la même** ressource, deux fois.
+- 💡 C'est pour ça que `String` n'est pas `Copy` — pas un choix arbitraire :
+  elle possède un tampon sur le tas, donc du code de libération.
+- Types `Copy` : les scalaires (`i32`, `bool`, `char`, `f64`) et les
+  tuples/tableaux qui n'en contiennent que.
+
+### Ownership et fonctions
+
+- Passer une valeur non-`Copy` à une fonction **transfère** l'ownership → la
+  variable d'origine est invalidée
+- ⚠️ **Un `return` est un *move***. Une valeur retournée n'est pas libérée en
+  fin de fonction : elle n'appartient plus à la fonction. La règle « fin de
+  portée → libération » ne vaut que pour les valeurs **encore possédées** à cet
+  instant.
+
+### Erreurs de raisonnement corrigées (2026-09-13)
+
+- ❌ « la pile est pour les données immuables » → le critère est la **taille
+  connue à la compilation**
+- ❌ « `let x = 5; let y = x;` copie dans le tas » → tout est sur la **pile**,
+  le tas n'est jamais touché
+- ❌ « le défaut entier est `u32` » → c'est **`i32`** (et `f64` pour les
+  flottants). Vérifié avec `type_name_of_val`. *(erreur présente aussi dans
+  `src/3-data-types.rs`)*
+- ❌ « après un move, les deux variables pointent vers le même tampon » →
+  la première est **invalidée**, il n'y a qu'un propriétaire
+- ❌ « le mécanisme move/copy est différent » → **c'est le même**, seul le
+  sort de la source change
+
+
 ## Transversal — concepts hors chapitre
 
 ### Paradigmes
@@ -382,7 +493,9 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 | `expect()` de Jest | `expect()` = assertion « ça devrait être `Ok` », sinon **crash** |
 | `?? valeurDefaut` | c'est `unwrap_or(v)`, surtout pas `expect()` |
 | `console.log` inspecte au runtime | `Display`/`Debug` résolus à la **compilation** |
-| GC | **ownership** (chapitre 4) |
+| GC | **ownership** — libération déterministe, à la fin de portée |
+| affectation = 2 références vers 1 objet | *move* : la source est **invalidée** |
+| copier un objet est "gratuit" | `clone()` est explicite parce qu'il **coûte** |
 
 ---
 
