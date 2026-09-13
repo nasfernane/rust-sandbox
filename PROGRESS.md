@@ -149,6 +149,8 @@ d'étude. `src/main.rs` = le jeu de devinettes (chapitre 2, en cours).
 - `use std::io;` — import du module d'entrées/sorties
 - `io::stdin().read_line(&mut guess).expect("...")`
 - Chaînage de méthodes sur plusieurs lignes (style rustfmt)
+- Ajout d'une **dépendance externe** dans `Cargo.toml` (`rand`)
+- Écriture d'une version personnelle du jeu avant de lire la suite du tuto
 
 ### Notions creusées en détail
 
@@ -206,6 +208,95 @@ d'étude. `src/main.rs` = le jeu de devinettes (chapitre 2, en cours).
   Seuls `stdin()`, `stdout()`, `stderr()` sont spécifiques au terminal.
 - ⚠️ **Il faut importer un trait pour appeler ses méthodes** — oublier
   `use std::io::Read` produit un « méthode inexistante » trompeur
+
+### Gestion d'erreurs — `Result` et `expect`
+
+- `Result<T, E>` est un **enum à deux variantes** : `Ok(T)` (succès + valeur) ou
+  `Err(E)` (échec + erreur). Une seule valeur de retour contenant *soit* l'un
+  *soit* l'autre — l'échec est **dans** la valeur, pas dans un canal parallèle.
+- ⚠️ **`expect(msg)` n'est PAS une valeur de repli.** Si `Ok(v)` → il rend `v`.
+  Si `Err(e)` → il fait **paniquer** le programme (code de sortie 101). Le
+  message est une étiquette collée sur le crash, pas un remplacement.
+- Analogie JS correcte : `if (err) throw new Error("...")`. **Pas** un `catch`,
+  **pas** un `?? valeurDefaut`.
+- Le nom `expect` décrit **l'hypothèse du programmeur** : « je m'attends à ce que
+  ce soit `Ok` ». Rien à voir avec l'`expect()` de Jest/Vitest.
+- Convention officielle : le message doit dire **pourquoi on s'attend à un
+  succès**, pas décrire l'échec. Le Book écrit `"Failed to read line"`, donc à
+  contre-courant de sa propre convention (choix pédagogique assumé).
+
+| Méthode | Lecture |
+|---|---|
+| `expect(msg)` | « ça devrait être `Ok`, sinon crash avec mon message » |
+| `unwrap()` | idem, sans message |
+| `unwrap_or(v)` | ← **la vraie** valeur de repli (≈ `??` de JS) |
+| `unwrap_or_else(f)` | repli calculé paresseusement |
+
+- `expect` est un outil de **prototype**. Planter n'est pas gérer une erreur.
+- ⚠️ Le `Ok` de `read_line` contient un `usize` (nombre d'octets lus), **pas** le
+  texte saisi — celui-ci part dans le `&mut`.
+- Vérifié : sur une saisie vide (juste Entrée), `read_line` renvoie `Ok(1)` et la
+  chaîne vaut `"\n"`, **pas** `""`. Le `.trim()` la ramène à `""`.
+  Conséquence : c'est le `parse()` **suivant** qui paniquera, pas la lecture.
+
+### Affichage — `Display` et `Debug`
+
+- Ce n'est pas `println!` qui sait afficher un `i32` — c'est **`i32` qui sait
+  s'afficher**, via le trait `Display`.
+- `{}` exige `Display`. La macro se contente de **router** : elle génère un appel
+  à `<TypeConcret as Display>::fmt`, résolu à la compilation.
+- Un type sans `Display` → erreur de **compilation** (`E0277`), pas de plantage
+  au runtime.
+- `{:?}` utilise un **autre trait**, `Debug` : pour le développeur, obtenable
+  gratuitement avec `#[derive(Debug)]`. `Display` est pour l'utilisateur final et
+  s'écrit à la main.
+- 💡 **Réflexe de débogage** : `{:?}` échappe les caractères invisibles (`"\n"`
+  visible au lieu d'un saut de ligne indiscernable).
+- C'est la réponse au « comment sans `typeof` » : rien à interroger à
+  l'exécution, la décision est déjà prise à la compilation.
+
+### Crates externes — `rand` et le versionnage
+
+*Première dépendance externe ajoutée au projet.*
+
+- ⚠️ **Le Book épingle `rand = "0.8.5"`, le projet est sur `0.10.2`.** L'API a été
+  renommée entre-temps : recopier le Book tel quel **ne compile pas**.
+
+| Book (0.8) | rand 0.10 |
+|---|---|
+| `rand::thread_rng()` | `rand::rng()` |
+| `.gen_range(..)` | `.random_range(..)` |
+| trait `Rng` porte `gen_range` | trait **`RngExt`** porte `random_range` |
+
+- Vérifié dans le source du crate : `rand::random_range(r)` **est littéralement**
+  `rng().random_range(r)`. Même générateur, même tirage.
+- `rng()` rend un `ThreadRng` : local au thread, amorcé paresseusement depuis
+  l'entropie de l'OS, ré-alimenté périodiquement.
+- Garder le générateur explicite pour : tirages **répétés** en boucle,
+  **reproductibilité** (`StdRng::seed_from_u64` pour les tests), ou le passer en
+  paramètre.
+- 💡 **La doc de TA version fait autorité, pas le tutoriel.** `cargo doc --open`
+  ouvre la doc des dépendances réellement compilées, hors-ligne.
+
+### ⚠️ Piège majeur : `E0599` = trait non importé
+
+```
+error[E0599]: no method named `random_range` found for struct `ThreadRng`
+```
+
+- Ne veut **presque jamais** dire « la méthode n'existe pas ». Veut dire **« le
+  trait qui la porte n'est pas dans la portée »**.
+- Déjà rencontré deux fois : `use std::io::Read`, `use rand::RngExt`.
+- **Pourquoi cette contrainte** : puisqu'un trait peut être implémenté sur un
+  type qu'on n'a pas écrit, le compilateur ne peut pas deviner lequel on veut —
+  deux traits définissant la même méthode entreraient en conflit. L'import est
+  la façon de dire lequel compte.
+- Réflexe : devant un `E0599`, ouvrir la doc du type, repérer dans quel **trait**
+  vit la méthode, importer ce trait.
+- Une **fonction libre** n'appartient à aucun trait → aucun import nécessaire.
+- Raccourci : `use rand::prelude::*;` importe `Rng`, `RngExt`, `SeedableRng` et
+  les générateurs courants d'un coup.
+
 
 ---
 
@@ -288,6 +379,9 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 | types structurels (TS) | types **nominaux** |
 | `null` / `undefined` | `Option<T>` (chapitre 6) |
 | `try` / `catch` | `Result<T, E>` (chapitre 9) |
+| `expect()` de Jest | `expect()` = assertion « ça devrait être `Ok` », sinon **crash** |
+| `?? valeurDefaut` | c'est `unwrap_or(v)`, surtout pas `expect()` |
+| `console.log` inspecte au runtime | `Display`/`Debug` résolus à la **compilation** |
 | GC | **ownership** (chapitre 4) |
 
 ---
