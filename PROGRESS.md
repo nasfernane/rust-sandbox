@@ -23,7 +23,7 @@
 | 3 | Common Programming Concepts | ✅ fait |
 | 2 | Programming a Guessing Game | ✅ fait |
 | 4 | Understanding Ownership | ✅ fait (references, slices compris) |
-| 5 | Using Structs | ⬜ suivant |
+| 5 | Using Structs to Structure Related Data | 🔄 **en cours** |
 
 ### Rust by Example
 
@@ -652,7 +652,9 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 ## À venir
 
 - **RBE ch. 1 (fin)** : `Display`/`Debug` à la main, `write!`, `{:?}` dérivé
-- **The Book, chapitre 5** : structs et blocs `impl` — la suite directe du 4
+- **The Book, chapitre 5 (en cours)** : définition de structs, *field init
+  shorthand*, *struct update syntax*, tuple structs, unit structs, blocs `impl`,
+  méthodes vs fonctions associées, `#[derive(Debug)]` et `{:#?}`
 - Chapitre 6 : enums, `Option`, `match`, `if let`
 - Chapitre 9 : gestion d'erreurs, `Result`
 - Chapitre 17 : « Rust est-il orienté objet ? », `dyn Trait`

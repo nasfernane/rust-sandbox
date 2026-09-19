@@ -1,62 +1,68 @@
+struct User {
+    active: bool,
+    username: String,
+    email: String,
+    sign_in_count: u64,
+}
+
 fn main() {
-    // formatted print
-    //
-    //
-    println!("{} days", 31);
+    // une structure permet de regrouper plusieurs valeurs comme un tuple
+    // mais toutes les valeurs doivent être nommées et on peut y accéder plus facilement
 
-    // positional arguments
-    println!("{0}, this is {1}. {1}, this is {0}", "Furimi", "Cromequis");
+    let mut user1 = User {
+        // new instance
+        active: true,
+        username: String::from("username123"),
+        email: String::from("user@email.com"),
+        sign_in_count: 67,
+    };
 
-    // named arguments
+    user1.email = String::from("another@email.com");
+
+    let user2 = build_user(String::from("Furimi"), String::from("furimi@email.com"));
+    let active_label = if user2.active { "Active" } else { "Inactive " };
+
     println!(
-        "{subject} {verb} {object}",
-        subject = "Furimi",
-        verb = "mange",
-        object = "la pâtée"
+        "{} user {} email is {} - signed {} times",
+        active_label, user2.username, user2.email, user2.sign_in_count
     );
 
-    // formater des nombres avec ":"
-    let number = 69420;
-    println!("Base 10: {}", number); // base 10 par défaut
-    println!("Binary: {:b}", number);
-    println!("Octal: {:o}", number);
-    println!("Hexadecimal: {:x}", number);
+    // on peut réutiliser des informations d'une autre instance du même type
+    // let _user3 = User {
+    //     active: user2.active,
+    //     username: user2.username,
+    //     email: String::from("another@email.fr"),
+    //     sign_in_count: user2.sign_in_count,
+    // };
 
-    // cadrage à droite - ajout d'espaces avant le caractère
-    println!("{number:>5}", number = 1);
+    // ou en version plus consise
+    let _user4 = User {
+        email: String::from("another@email.fr"),
+        ..user2
+    };
 
-    // même principe pour ajouter des caractères d'alignement à gauche d'un nombre
-    println!("{number:0>5}", number = 1);
-    // en inversant l'alignement, on comble à droite
-    println!("{number:0<5}", number = 8);
-    // centrer l'alignement
-    println!("{number:0^5}", number = 8);
+    // TUPLE STRUCTS
+    // une structure tuple permet d'avoir un nommage qui donne une signification à l'ensemble
+    // sans avoir à nommer chaque champ individuellement
+    struct Color(i32, i32, i32);
+    struct Point(i32, i32, i32);
 
-    // utiliser un argument nommé avec $
-    println!("{number:0<width$}", number = 1, width = 12);
+    let _black = Color(0, 0, 0);
+    let _origin = Point(0, 0, 0);
 
-    // Note: seulement les types qui implémentent fmt::Display peuvent être formattés avec {}
-    // Les types créés par des utilisateurs n'implémentent pas fmt::Display par défaut
-    //
-    #[allow(dead_code)]
-    struct Structure(i32);
+    // on peut accéder aux valeurs de la même façon qu'un tuple classique
+    println!("{}, {}, {}", _black.0, _black.1, _black.2);
 
-    // println!("This struct {}", Structure(3)); // Structure doesn’t implement std::fmt::Display
-    //
+    // par contre pour déstructurer contrairement à un tuple il faut nommer le type
+    let Point(x, y, z) = _origin;
+    println!("x is {x}, y is {y}, z is {z}")
+}
 
-    let number: f64 = 1.0;
-    let width: usize = 5;
-
-    println!("{number:>width$}");
-
-    // std:fmt contient des traits pour définir l'affichage des textes, les deux plus importants
-    // fmt::Display avec {} comme déjà vu avant
-    println!("Coucou le meileur chat, {}", "Furimi");
-    // fmt:Debug avec {:?}
-    println!("Alerte envahisseur, {:?}", "Yuki");
-
-    // formater le nombre de décimales
-    let pi = 3.141592;
-
-    println!("Pi is {:.3}", pi)
+fn build_user(username: String, email: String) -> User {
+    User {
+        active: true,
+        username,
+        email,
+        sign_in_count: 0,
+    }
 }

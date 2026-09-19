@@ -111,9 +111,10 @@ encore atteints. Disponible hors-ligne sur sa machine via `rustup doc --book`.
 Bascule décidée le 2026-09-05, après le chapitre 1 de *Rust by Example*. Motif :
 ses questions portent systématiquement sur le **pourquoi** (rôle de Cargo,
 contenu d'un binaire, raison d'être des macros), un terrain que RBE ne couvre
-pas. Position actuelle au 2026-09-19 : chapitres 1 et 3 terminés, **chapitre 4
-(ownership) en cours**. Le chapitre 2 (jeu de devinettes) a été fait après le 3,
-sur suggestion du Book lui-même pour ceux qui veulent comprendre avant de coder.
+pas. Position actuelle au 2026-09-19 : chapitres 1, 3, 2 et 4 terminés,
+**chapitre 5 (structs) en cours**. Le chapitre 2 (jeu de devinettes) a été fait
+après le 3, sur suggestion du Book lui-même pour ceux qui veulent comprendre
+avant de coder. En parallèle, *Rust by Example* chapitre 1 (formatted print).
 
 Depuis le 2026-09-19, **trois ressources menées en parallèle** :
 
@@ -143,11 +144,14 @@ Conséquences pour toi :
 
 Jalon en cours :
 
-- **Chapitre 4** (*ownership*) — le seul concept sans aucun équivalent en JS,
-  et le vrai mur du parcours. Prends-y le temps qu'il faut, quitte à ralentir
-  franchement : tout le reste du langage en dépend
+- **Chapitre 5** (*structs*) — premier type qu'il définit lui-même. Enjeu
+  principal : les faux amis avec les classes JS/TS. Une struct ne contient que
+  des **données** ; le comportement vit dans un bloc `impl` séparé. Et les types
+  sont **nominaux** : deux structs aux mêmes champs restent incompatibles.
 
-Jalon franchi : **chapitre 2** (jeu de devinettes), son premier projet Cargo.
+Jalons franchis : **chapitre 2** (jeu de devinettes), son premier projet Cargo.
+**Chapitre 4** (*ownership*) — le mur du parcours, passé : move/copy, references
+et borrowing, references pendantes, slices, frontières de caractères UTF-8.
 
 Notions déjà abordées hors tutoriel : package manager et rôle de Cargo, contenu
 d'un binaire (sections, désassemblage, `strings`), fonctions vs macros, rôle
