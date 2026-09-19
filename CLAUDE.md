@@ -90,9 +90,11 @@ désamorcer au moment où ils se présentent :
   nightly). `rustc 1.98.1` au 2026-09-13 — vérifier avec `rustup show`.
 - **Projet Cargo** depuis le commit `3803c8f`. Les binaires sont au format
   Mach-O, pas PE ; pas de `.pdb` (les symboles de debug vivent dans des `.dSYM`).
-- Sources dans `src/`, un fichier par notion, numérotées dans l'ordre d'étude
-  (`3-data-types.rs`, `5-control-flow.rs`…). `src/main.rs` est le binaire courant.
-  Artefacts de compilation dans `target/`.
+- Sources rangées par tutoriel : `src/the-book/` et `src/by-example/`, un
+  fichier par notion, numéroté dans l'ordre d'étude (`3a-data-types.rs`,
+  `4c-slices.rs`…). `src/main.rs` est le binaire courant — c'est là qu'il
+  travaille la notion en cours avant de l'archiver dans le dossier du tutoriel
+  correspondant. Artefacts de compilation dans `target/`.
 - `PROGRESS.md` à la racine recense les notions abordées — **le tenir à jour au
   fil des sessions**, il sert de support aux quizz de révision.
 - Dépendance actuelle : `rand = "0.10.2"` — bien plus récente que le `0.8.5` du
@@ -103,23 +105,41 @@ désamorcer au moment où ils se présentent :
 
 **Ressource principale : [The Book](https://doc.rust-lang.org/book/)**, *The
 Rust Programming Language*. C'est le fil directeur : cale tes explications sur
-sa progression et n'anticipe pas les chapitres qu'il n'a pas encore atteints.
-Disponible hors-ligne sur sa machine via `rustup doc --book`.
+sa progression et n'anticipe pas les chapitres qu'aucune de ses ressources n'a
+encore atteints. Disponible hors-ligne sur sa machine via `rustup doc --book`.
 
 Bascule décidée le 2026-09-05, après le chapitre 1 de *Rust by Example*. Motif :
 ses questions portent systématiquement sur le **pourquoi** (rôle de Cargo,
 contenu d'un binaire, raison d'être des macros), un terrain que RBE ne couvre
-pas. Position actuelle au 2026-09-13 : chapitres 1 et 3 terminés, **chapitre 4
+pas. Position actuelle au 2026-09-19 : chapitres 1 et 3 terminés, **chapitre 4
 (ownership) en cours**. Le chapitre 2 (jeu de devinettes) a été fait après le 3,
 sur suggestion du Book lui-même pour ceux qui veulent comprendre avant de coder.
 
-Ressources d'appoint :
+Depuis le 2026-09-19, **trois ressources menées en parallèle** :
 
-- **[Rust by Example](https://doc.rust-lang.org/rust-by-example)** — en
-  compagnon, pour les variantes de syntaxe sur un thème déjà compris
+- **[The Book](https://doc.rust-lang.org/book/)** — le **fil directeur**. En cas
+  de conflit de progression, c'est lui qui donne la position de référence.
+  Sources dans `src/the-book/`.
+- **[Rust by Example](https://doc.rust-lang.org/rust-by-example)** — repris en
+  parallèle, pour les variantes de syntaxe sur un thème déjà compris.
+  Sources dans `src/by-example/`.
 - **[Rustlings](https://github.com/rust-lang/rustlings)** — exercices à réparer
-  soi-même, avec vérification automatique. Particulièrement adapté ici :
-  c'est lui qui écrit le code, jamais toi
+  soi-même, avec vérification automatique, **dans un autre dépôt** (hors de ce
+  projet). Particulièrement adapté ici : c'est lui qui écrit le code, jamais toi.
+
+Conséquences pour toi :
+
+- Ne suppose pas qu'un concept est neuf sous prétexte que le Book ne l'a pas
+  encore introduit : RBE avance dans un ordre différent et peut l'avoir déjà
+  exposé. **Demande-lui où il l'a croisé** plutôt que de deviner.
+- Le plafond de ce que tu peux évoquer est l'**union** des trois parcours, pas
+  la seule position dans le Book. Reste malgré tout mesuré : n'anticipe pas un
+  chapitre qu'aucune des trois ressources n'a atteint.
+- Les deux tutoriels traitent les mêmes notions sous des angles différents.
+  Quand il revoit quelque chose, la valeur ajoutée est la **mise en relation**
+  des deux présentations, pas la répétition de l'explication.
+- S'il mentionne un exercice Rustlings, tu ne verras pas le fichier (autre
+  dépôt) : fais-le décrire l'énoncé et l'erreur du compilateur.
 
 Jalon en cours :
 

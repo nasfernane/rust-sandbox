@@ -7,22 +7,38 @@
 
 ## État du parcours
 
-**Ressource principale** : [The Book](https://doc.rust-lang.org/book/)
+**Trois ressources menées en parallèle depuis le 2026-09-19** :
+
+| Ressource | Rôle | Sources |
+|---|---|---|
+| [The Book](https://doc.rust-lang.org/book/) | fil directeur, le *pourquoi* | `src/the-book/` |
+| [Rust by Example](https://doc.rust-lang.org/rust-by-example) | variantes de syntaxe, le *comment* | `src/by-example/` |
+| [Rustlings](https://github.com/rust-lang/rustlings) | exercices à réparer soi-même | **autre dépôt** |
+
+### The Book
 
 | Chapitre | Titre | État |
 |---|---|---|
 | 1 | Getting Started | ✅ fait |
 | 3 | Common Programming Concepts | ✅ fait |
 | 2 | Programming a Guessing Game | ✅ fait |
-| 4 | Understanding Ownership | 🔄 **en cours** — le vrai mur |
+| 4 | Understanding Ownership | ✅ fait (references, slices compris) |
+| 5 | Using Structs | ⬜ suivant |
+
+### Rust by Example
+
+| Chapitre | Titre | État |
+|---|---|---|
+| 1 | Hello World / formatted print | 🔄 **en cours** — formatage |
 
 **Pourquoi ce détour 1 → 3 → 2 ?** Le Book lui-même suggère cet ordre à ceux qui
 préfèrent comprendre les fondations avant de coder un projet. Le chapitre 2 est
 un projet complet qui utilise des notions non encore expliquées ; l'avoir abordé
 après le 3 le rend beaucoup plus lisible.
 
-**Fichiers du dépôt** : `src/`, un fichier par notion, numérotés dans l'ordre
-d'étude. `src/main.rs` = le jeu de devinettes (chapitre 2, en cours).
+**Fichiers du dépôt** : `src/the-book/` et `src/by-example/`, un fichier par
+notion, numérotés dans l'ordre d'étude. `src/main.rs` = l'atelier de la notion
+en cours, archivé ensuite dans le dossier du tutoriel correspondant.
 
 ---
 
@@ -64,7 +80,7 @@ d'étude. `src/main.rs` = le jeu de devinettes (chapitre 2, en cours).
 
 ### 3.2 Types de données
 
-*Fichier : `src/3-data-types.rs`*
+*Fichier : `src/the-book/3a-data-types.rs`*
 
 **Inférence et annotation**
 - L'annotation est requise seulement quand le type est ambigu (typiquement
@@ -404,11 +420,145 @@ ne possède rien       → rien à libérer  → autant de copies qu'on veut →
   le tas n'est jamais touché
 - ❌ « le défaut entier est `u32` » → c'est **`i32`** (et `f64` pour les
   flottants). Vérifié avec `type_name_of_val`. *(erreur présente aussi dans
-  `src/3-data-types.rs`)*
+  `src/the-book/3a-data-types.rs`)*
 - ❌ « après un move, les deux variables pointent vers le même tampon » →
   la première est **invalidée**, il n'y a qu'un propriétaire
 - ❌ « le mécanisme move/copy est différent » → **c'est le même**, seul le
   sort de la source change
+
+### References et borrowing
+
+- Une **reference** (`&s`) *emprunte* la valeur : elle donne l'accès **sans
+  prendre l'ownership**. Fin de portée de la reference → **rien n'est libéré**,
+  elle ne possédait rien.
+- `&mut s` = **emprunt mutable** (*mutable borrow*). Règle : **soit** N emprunts
+  immuables, **soit** 1 seul emprunt mutable — jamais les deux en même temps.
+- Motif : cette règle élimine les *data races* **à la compilation**, sans aucun
+  coût à l'exécution.
+- ⚠️ Pour emprunter mutablement, la variable source doit elle-même être `mut`
+  (`E0596`).
+
+### Le borrow checker
+
+- Ce n'est pas un programme séparé : c'est une **phase interne à `rustc`**, qui
+  opère sur la **MIR**, *après* le type checking et *avant* la génération de
+  code.
+- Vérifié expérimentalement avec `--emit=metadata` : l'erreur d'emprunt apparaît
+  alors qu'aucun code machine n'a été produit.
+- 💡 C'est exactement ce qui rend **`cargo check` beaucoup plus rapide que
+  `cargo build`** : il s'arrête avant le codegen tout en validant les emprunts.
+- **Coût à l'exécution : zéro.** Rien de tout ça n'existe dans le binaire.
+
+### Dangling references (*references pendantes*)
+
+- Erreurs rencontrées : `E0597` (la valeur ne vit pas assez longtemps),
+  `E0106` (*missing lifetime specifier*, sur un retour de fonction).
+- ⚠️ Formulation à corriger : ce n'est **pas** « une reference vers une valeur
+  qui ne lui appartient plus » — une reference **ne possède jamais rien**.
+  C'est : **le propriétaire a disparu, la reference lui survit.**
+- Retourner `&String` depuis une fonction qui a créé la `String` est refusé :
+  le propriétaire meurt en fin de fonction. La solution est de **retourner la
+  `String`** (donc l'ownership), pas une reference.
+
+### The Slice Type
+
+- Une slice `&s[0..5]` est une **vue** : pointeur + longueur, **aucune copie**.
+- Le type d'un string literal **est** `&str` — donc un literal *est* déjà une
+  slice.
+- 💡 Prendre `&str` en parametre plutôt que `&String` : la fonction accepte
+  alors les deux (deref coercion).
+- Une slice **emprunte** : tant qu'elle vit, la source ne peut pas être mutée
+  (`s.clear()` refusé) — le bug classique de l'index périmé devient impossible.
+
+### UTF-8, byte literals et points de code
+
+- `b' '` = **byte literal**, un `u8` (ici 32). À distinguer de `' '`, un `char`
+  de **4 octets**.
+- `as_bytes()` est utilisé par le tutoriel parce qu'on **ne peut pas indexer une
+  `String`** par entier : `s[0]` n'a pas de sens univoque en UTF-8.
+- **Point de code** = le numéro du caractère dans le catalogue Unicode. ⚠️
+  `U+00E9` et `233` sont **deux notations du même nombre**, pas deux étapes.
+- **Encodage** = la façon d'écrire ce nombre en octets. UTF-8 : 1 à 4 octets.
+- **Auto-synchronisation d'UTF-8** : un octet de continuation commence toujours
+  par `10xxxxxx`, un octet de tête jamais. On peut donc retrouver une frontière
+  de caractère depuis n'importe quelle position → `is_char_boundary` est **O(1)**,
+  et chercher un octet ASCII (comme l'espace) **ne peut pas** tomber au milieu
+  d'un caractère multi-octets. C'est ce qui rend `as_bytes()` légitime ici.
+- Découper hors frontière **panique** (`byte index N is not a char boundary`).
+- ⚠️ Faux ami JS : `"👨‍👩‍👧"[0]` renvoie `"\ud83d"` — une **UTF-16 code unit**,
+  une moitié de caractère. **JS corrompt silencieusement là où Rust panique.**
+
+### Erreurs de raisonnement corrigées (suite)
+
+- ❌ « une reference pendante pointe vers une valeur qui ne lui appartient
+  plus » → une reference **ne possède jamais** ; c'est le **propriétaire** qui a
+  disparu
+- ❌ « un tableau contient des references » → les valeurs sont **inline**
+  (`[i32; 3]` = 12 octets, adresses espacées de 4)
+- ❌ « le point de code est la valeur base 10 du code hexadécimal » → une étape
+  de trop : le point de code **est** le nombre
+- ❌ « en JS on récupère les caractères Unicode » → des **UTF-16 code units**
+
+---
+
+## Rust by Example — ch. 1 : formatted print
+
+### Les trois façons de nommer un argument
+
+```rust
+println!("{} days", 31);                          // positionnel implicite
+println!("{0}, this is {1}. {1}, this is {0}", a, b); // index explicite
+println!("{subject} {verb}", subject = "…", verb = "…"); // nommé
+println!("{number:>width$}");        // capture implicite depuis la portée
+```
+
+- La **capture implicite** (`{number}` sans argument) lit la variable locale du
+  même nom. Stabilisée en Rust 2021.
+- ⚠️ Elle ne marche **qu'avec un nom de variable simple** : `{a.b}` ou
+  `{f()}` sont refusés.
+
+### Anatomie d'un spécificateur
+
+```
+{nom : remplissage alignement signe # 0 largeur . précision type}
+```
+
+- **Bases** : `{:b}` binaire, `{:o}` octal, `{:x}` / `{:X}` hexadécimal.
+  `{:#x}` ajoute le préfixe `0x`.
+- **Alignement** : `<` gauche, `>` droite, `^` **centré**.
+- **Remplissage** (*fill*) : n'importe quel caractère placé **avant**
+  l'alignement — `{:*>5}`, `{:->5}`, `{:.>5}`, `{:0>5}`.
+- **Largeur dynamique** : `width$` (argument nommé ou variable capturée). Doit
+  être de type **`usize`**.
+
+### ⚠️ Piège : `{:0>5}` n'est pas `{:05}`
+
+Deux syntaxes différentes qui coïncident sur les positifs et divergent sur les
+négatifs. Vérifié expérimentalement :
+
+| Valeur | `{:0>5}` (remplissage) | `{:05}` (flag zéro) |
+|---|---|---|
+| `42` | `00042` | `00042` |
+| `-42` | `00-42` | `-0042` |
+
+- `0>` traite le `0` comme un **caractère de remplissage quelconque** : le signe
+  est poussé avec le reste.
+- `{:05}` est un **flag dédié aux nombres**, conscient du signe : il garde le
+  `-` devant et remplit après. Il respecte aussi le préfixe (`{:#08x}` →
+  `0x0000ff`).
+- 💡 Pour un nombre, préférer `{:05}` ; `0>` est correct pour du texte.
+
+### Autres points
+
+- La largeur est un **minimum** : elle ne tronque jamais (`{:>3}` sur
+  `"abcdefgh"` rend la chaîne entière).
+- Seuls les types qui implémentent `fmt::Display` passent dans `{}`. Une struct
+  utilisateur ne l'implémente **pas** par défaut → `{:?}` via `#[derive(Debug)]`,
+  ou `impl fmt::Display` à la main.
+
+**Traductions** : *right-justified* → **aligné à droite** (ou *cadré à droite*
+pour des colonnes de nombres). ⚠️ « justifié » seul, en typographie française,
+désigne le **double** alignement (les deux bords nets), pas le droit.
 
 
 ## Transversal — concepts hors chapitre
@@ -501,10 +651,8 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 
 ## À venir
 
-- **Chapitre 2 (fin)** : `rand`, `match`, `Ordering`, la boucle de jeu
-- **Chapitre 4 — Ownership** ⚠️ le seul concept sans aucun équivalent JS.
-  `String`/`&str` en est déjà le premier avant-goût. Prendre le temps qu'il faut.
-- Chapitre 5 : structs et blocs `impl`
+- **RBE ch. 1 (fin)** : `Display`/`Debug` à la main, `write!`, `{:?}` dérivé
+- **The Book, chapitre 5** : structs et blocs `impl` — la suite directe du 4
 - Chapitre 6 : enums, `Option`, `match`, `if let`
 - Chapitre 9 : gestion d'erreurs, `Result`
 - Chapitre 17 : « Rust est-il orienté objet ? », `dyn Trait`
