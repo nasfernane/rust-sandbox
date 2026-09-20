@@ -386,6 +386,70 @@ pas la copie profonde, il oblige à l'écrire.
   à envisager consciemment.
 - Erreur associée : `error[E0382]: borrow of moved value`
 
+### ⚠️⚠️ Le critère de `Copy` : la RESSOURCE, pas la taille
+
+> **Erreur commise deux fois (2026-09-13, puis 2026-09-20 en révision).**
+> Elle revient sous des habits différents — à relire avant chaque quizz.
+
+❌ « la propriété est transférée pour les types complexes **dont la taille
+n'est pas connue à l'avance** »
+
+**Les six tailles suivantes sont TOUTES connues à la compilation** (vérifié
+avec `size_of`) — et pourtant `Copy` les sépare en deux camps :
+
+| Type | Taille | `Copy` ? |
+|---|---|---|
+| `i64` | 8 o | ✅ |
+| `[i32; 3]` | 12 o | ✅ |
+| `(i32, f64)` | 16 o | ✅ |
+| `&str` | 16 o | ✅ |
+| `String` | **24 o** | ❌ `E0277` |
+| `(i32, String)` | 32 o | ❌ |
+
+- **Aucune corrélation avec la taille** : `&str` (16 o) est `Copy`, `String`
+  (24 o) ne l'est pas. `[i32; 3]` (12 o) est `Copy` alors que c'est un type
+  composé.
+- ⚠️ **Une `String` a une taille parfaitement connue : 24 octets.** Ce qui est
+  inconnu, c'est la taille du **tampon sur le tas** — mais ce tampon n'est pas
+  la `String`, il est *au bout d'un pointeur*.
+
+> ✅ **Le critère juste : un type est `Copy` si dupliquer ses octets suffit à
+> produire une valeur indépendante et valide.** Autrement dit : s'il ne
+> **possède aucune ressource externe** (tampon sur le tas, fichier, socket).
+
+- Dupliquer les 24 o d'une `String` donnerait deux triplets pointant vers **le
+  même tampon** → deux propriétaires → ***double free***. D'où le refus.
+- Dupliquer les 12 o de `[i32; 3]` ne pose aucun problème : rien derrière.
+- 💡 Ni la taille, ni la « complexité », ni le nombre de champs : **la
+  possession d'une ressource externe**.
+
+### Deux correctifs possibles pour `E0382` — ils ne disent pas la même chose
+
+| Correctif | Sens | Coût |
+|---|---|---|
+| `&valeur` | « je veux seulement **regarder** » | aucune allocation |
+| `valeur.clone()` | « je veux une **seconde** valeur indépendante » | allocation + recopie |
+
+- Réflexe par défaut : **emprunter**. On n'alloue que si on a une raison.
+- Ils ne sont pas interchangeables : pour modifier la copie sans toucher
+  l'original, seul `clone()` convient.
+
+### `&'static str` — pourquoi une fonction peut le renvoyer
+
+Le chapitre 4 interdit de renvoyer une reference vers une valeur **créée dans
+la fonction** (`E0106`) : son propriétaire meurt à la sortie. Un literal échappe
+à la règle.
+
+- `'static` est une **durée de vie** (*lifetime*) : « vit aussi longtemps que le
+  programme ».
+- Les octets d'un literal sont **dans le binaire**, présents avant que `main`
+  démarre, jamais libérés. **Il n'y a aucun propriétaire à faire mourir.**
+- ⚠️ Formulation à corriger : « on transfère la propriété du literal » — **non**,
+  un `&'static str` est une **reference**, elle ne transfère rien et personne ne
+  possède ces octets.
+- L'immuabilité d'un literal est une **conséquence** (section en lecture seule),
+  pas la raison.
+
 ### Pourquoi `Copy` et `Drop` sont incompatibles
 
 `error[E0184]: Copy not allowed on types with destructors` (vérifié).
@@ -501,6 +565,83 @@ ne possède rien       → rien à libérer  → autant de copies qu'on veut →
 
 ---
 
+## Chapitre 5 — Structs (en cours)
+
+Fichier : `src/the-book/5-structures.rs` — compile sans erreur **ni warning**.
+
+### Les trois formes de struct
+
+| Forme | Exemple | Note |
+|---|---|---|
+| classique | `struct User { active: bool, … }` | champs nommés |
+| tuple | `struct Color(i32, i32, i32);` | champs **anonymes**, accès `.0` |
+| unité | `struct AlwaysEqual;` | **0 octet**, sert de support à un trait |
+
+- ⚠️ « une struct a forcément des champs nommés » est **faux** : c'est vrai de la
+  forme classique seulement. Ce qui définit une struct, c'est qu'elle **crée un
+  type nommé**.
+- Déstructurer une tuple struct exige de **nommer le type** :
+  `let Point(x, y, z) = origin;` — contrairement à un tuple nu.
+- **Field init shorthand** : `username,` au lieu de `username: username,`.
+
+### ⚠️ *Struct update syntax* (`..autre`) — le piège du chapitre
+
+**Ce n'est pas le spread `{...obj}` de JS.** `..autre` fait un **move** de chaque
+champ non fourni explicitement. Vérifié sur `User` après `..user2` :
+
+| Champ | Après `..user2` | Pourquoi |
+|---|---|---|
+| `active` (bool) | ✅ lisible | `Copy` → move sans invalidation |
+| `sign_in_count` (u64) | ✅ lisible | `Copy` |
+| `email` (String) | ✅ lisible | **fourni explicitement**, jamais touché |
+| `username` (String) | ❌ `E0382` | non-`Copy` → déplacé |
+
+- Notion clé : le ***partial move*** (**déplacement partiel**). Une struct n'est
+  pas invalidée en bloc mais **champ par champ**. Elle reste utilisable pour
+  tout ce qui n'a pas bougé.
+- Conséquence vérifiée : la version verbeuse (`username: user2.username`) et la
+  version `..user2` consomment le **même** champ — elles sont **alternatives**,
+  pas équivalentes. Les deux à la suite ne compilent pas.
+
+### Déstructurer, c'est déplacer
+
+- `let Nom(a, b) = n;` sur des champs `String` déplace **tout** → `n` entièrement
+  inutilisable.
+- 💡 Sortie soufflée par `rustc` (*borrow this binding in the pattern*) :
+  déstructurer **derrière une reference**, `let Nom(a, b) = &n;` → `a` et `b`
+  sont des `&String`, `n` reste intact. (Formalisé au chapitre 18.)
+
+### Pourquoi `String` et pas `&str` dans les champs
+
+- Une struct **possède ses données**. Mettre `&str` exigerait une annotation de
+  durée de vie (*lifetime*, chapitre 10).
+- Règle pratique d'ici là : **une struct possède ses données.**
+
+### ⚠️ Piège non lié aux structs : paramètres positionnels de même type
+
+`fn build_user(username: String, email: String)` — inverser les deux arguments
+**compile**. Le typage nominal ne protège pas : `String` et `String` sont le même
+type. Remède : une tuple struct par concept (`struct Email(String)`).
+
+### Struct vs `interface` TS — la correspondance correcte
+
+| TypeScript | Rust |
+|---|---|
+| `interface` de **données** | `struct` — mais **nominale et concrète** |
+| `interface` de **contrat** / méthodes | **`trait`** (ch. 10) |
+| `class` | `struct` **+** bloc `impl`, **séparés** |
+| duck typing structurel | rien — il faut nommer le type |
+
+- ⚠️ Une `interface` TS est **effacée** à la compilation : zéro octet produit.
+  Une struct **est** la disposition mémoire.
+- Vérifié expérimentalement : `struct Mesure { a: u8, b: u64, c: u8 }` fait
+  **16 octets** (et non 10) — bourrage d'alignement. Le compilateur
+  **réordonne les champs** : offsets mesurés `b=0`, `a=8`, `c=9`. Avec
+  `#[repr(C)]`, qui impose l'ordre déclaré, la même struct monte à **24 octets**.
+- Rien n'« implémente » une struct : ce rôle revient aux traits.
+
+---
+
 ## Rust by Example — ch. 1 : formatted print
 
 ### Les trois façons de nommer un argument
@@ -547,6 +688,10 @@ négatifs. Vérifié expérimentalement :
   `-` devant et remplit après. Il respecte aussi le préfixe (`{:#08x}` →
   `0x0000ff`).
 - 💡 Pour un nombre, préférer `{:05}` ; `0>` est correct pour du texte.
+- ⚠️ **Le signe est compté dans la largeur** — personne ne le supprime :
+  `{:0>3}` sur `-2` donne `0-2` (le `-` poussé *dans* le nombre), `{:03}` donne
+  `-02` (le `-` gardé en tête, remplissage **après** le signe). Point mal compris
+  en révision le 2026-09-20.
 
 ### Autres points
 
@@ -652,9 +797,8 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 ## À venir
 
 - **RBE ch. 1 (fin)** : `Display`/`Debug` à la main, `write!`, `{:?}` dérivé
-- **The Book, chapitre 5 (en cours)** : définition de structs, *field init
-  shorthand*, *struct update syntax*, tuple structs, unit structs, blocs `impl`,
-  méthodes vs fonctions associées, `#[derive(Debug)]` et `{:#?}`
+- **Chapitre 5 (suite)** : 5.2 le programme d'exemple et `#[derive(Debug)]` /
+  `{:#?}` / `dbg!`, puis 5.3 blocs `impl`, méthodes vs fonctions associées
 - Chapitre 6 : enums, `Option`, `match`, `if let`
 - Chapitre 9 : gestion d'erreurs, `Result`
 - Chapitre 17 : « Rust est-il orienté objet ? », `dyn Trait`
@@ -663,5 +807,8 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 
 - Écrire une fonction `i32 -> &str` renvoyant `"pair"` / `"impair"`, en
   utilisant `if` **comme expression** (sans `return`)
-- Qu'apporte une struct `Point` qu'un tuple `(i32, i32)` n'apporte pas ?
-  (piste : types nominaux)
+- ✅ *Répondu au chapitre 5* : qu'apporte une struct `Point` qu'un tuple
+  `(i32, i32)` n'apporte pas ? → un **type nommé**, donc nominal et
+  incompatible avec un autre de même forme
+- Pourquoi `#[repr(C)]` existe-t-il, si le réordonnancement des champs fait
+  gagner 33 % ? Dans quel cas payer 24 octets au lieu de 16 ?
