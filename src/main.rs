@@ -20,13 +20,13 @@ fn main() {
     // Écris `parite(n: i32) -> &'static str` qui renvoie "pair" ou
     // "impair".
     //
-    println!("»»» EXERCICE 1 »»»");
-    fn parite(n: i32) -> &'static str {
-        if n % 2 == 0 { "pair" } else { "impair" }
-    }
+    // println!("»»» EXERCICE 1 »»»");
+    // fn parite(n: i32) -> &'static str {
+    //     if n % 2 == 0 { "pair" } else { "impair" }
+    // }
 
-    println!("7 est un nombre {}", parite(7));
-    println!("10 est un nombre {}", parite(10));
+    // println!("7 est un nombre {}", parite(7));
+    // println!("10 est un nombre {}", parite(10));
     //
     // Contraintes :
     //   - AUCUN `return`, AUCUN `;` sur la dernière expression
@@ -47,26 +47,26 @@ fn main() {
     // Pars du littéral "  42  " (avec espaces).
     // Obtiens l'entier 42, puis son double.
 
-    println!("»»» EXERCICE 2 »»»");
+    // println!("»»» EXERCICE 2 »»»");
 
-    let value_without_mut = "  42  ";
-    let value_without_mut = value_without_mut.trim();
-    let value_without_mut: u8 = value_without_mut
-        .parse()
-        .expect("Value should be a valid number");
-    let value_without_mut = value_without_mut * 2;
+    // let value_without_mut = "  42  ";
+    // let value_without_mut = value_without_mut.trim();
+    // let value_without_mut: u8 = value_without_mut
+    //     .parse()
+    //     .expect("Value should be a valid number");
+    // let value_without_mut = value_without_mut * 2;
 
-    println!("Value without mut is {value_without_mut}");
+    // println!("Value without mut is {value_without_mut}");
 
-    let mut value_with_mut = "  42  ";
-    value_with_mut = value_with_mut.trim();
+    // let mut value_with_mut = "  42  ";
+    // value_with_mut = value_with_mut.trim();
 
-    let mut parsed_value_with_mut: u8 = value_with_mut
-        .parse()
-        .expect("Value should be a valid number");
-    parsed_value_with_mut = parsed_value_with_mut * 2;
+    // let mut parsed_value_with_mut: u8 = value_with_mut
+    //     .parse()
+    //     .expect("Value should be a valid number");
+    // parsed_value_with_mut = parsed_value_with_mut * 2;
 
-    println!("Value with mut is {parsed_value_with_mut}");
+    // println!("Value with mut is {parsed_value_with_mut}");
     // Fais-le DEUX fois :
     //   a) par shadowing — le même nom réutilisé, jamais de `mut`
     //   b) avec des noms distincts et `let mut` pour le doublement
@@ -85,21 +85,21 @@ fn main() {
     //   Pain         ..2
     //   Cafe         .12
     //   Chocolat     ..1
-    // 
-    println!("»»» EXERCICE 3 »»»");
+    //
+    // println!("»»» EXERCICE 3 »»»");
 
-    const NAME_PADDING: usize = 12;
-    const QUANTITY_PADDING: usize = 3;
+    // const NAME_PADDING: usize = 12;
+    // const QUANTITY_PADDING: usize = 3;
 
-    fn print_line(name: &'static str, quantity: i8) {
-        println!("{0:<NAME_PADDING$}{1:.>QUANTITY_PADDING$}", name, quantity);
-    }
+    // fn print_line(name: &'static str, quantity: i8) {
+    //     println!("{0:<NAME_PADDING$}{1:.>QUANTITY_PADDING$}", name, quantity);
+    // }
 
-    println!("{0:<NAME_PADDING$}{1:>QUANTITY_PADDING$}", "Article", "Qte");
-    println!("{0:-<1$}", "", { NAME_PADDING + QUANTITY_PADDING });
-    print_line("Pain", 2);
-    print_line("Cafe", 12);
-    print_line("Chocolat", 1);
+    // println!("{0:<NAME_PADDING$}{1:>QUANTITY_PADDING$}", "Article", "Qte");
+    // println!("{0:-<1$}", "", { NAME_PADDING + QUANTITY_PADDING });
+    // print_line("Pain", 2);
+    // print_line("Cafe", 12);
+    // print_line("Chocolat", 1);
 
     //
     // Contraintes :
@@ -119,14 +119,14 @@ fn main() {
     // Crée une `String`, affecte-la à une seconde variable, puis essaie
     // d'afficher la PREMIÈRE.
 
-    println!("»»» EXERCICE 4 »»»");
-    let super_string = String::from("Wow quelle belle string");
-    let _other_string = &super_string;
-    println!("{super_string}");
+    // println!("»»» EXERCICE 4 »»»");
+    // let super_string = String::from("Wow quelle belle string");
+    // let _other_string = &super_string;
+    // println!("{super_string}");
 
-    let super_number = 42;
-    let _other_number = super_number;
-    println!("{super_number}");
+    // let super_number = 42;
+    // let _other_number = super_number;
+    // println!("{super_number}");
 
     //   a) Note le code d'erreur exact : E0382
     //   b) Fais compiler SANS supprimer l'affichage de la première
@@ -166,7 +166,25 @@ fn main() {
     //      Qu'est-ce que la fonction accepte en plus, du coup ?
     //   b) Le paramètre `s` lui-même (pas la chaîne pointée) occupe
     //      combien d'octets dans les deux cas ? Pourquoi la différence ?
+    //
+    println!("»»» EXERCICE 6 »»»");
+    let string = String::from("Furimi est soyeuse");
 
+    // fn taille(s: &String) -> usize {
+    //     s.len()
+    // }
+
+    fn taille(s: &str) -> usize {
+        s.len()
+    }
+
+    let length = taille(&string);
+
+    println!("{string}");
+    println!("Length is {length}");
+
+    // a) avec s: &str, la fonction accepte aussi les string literals
+    // b) 16 octets car &str utilise un pointeur gras (avec la longueur)
     // -----------------------------------------------------------------
     // EX. 7 — Emprunt mutable et règle XOR                 [ch. 4.2]
     // -----------------------------------------------------------------
@@ -182,6 +200,38 @@ fn main() {
     //
     // [PRÉDIS] avant (c) : si tu crées l'emprunt immuable mais ne
     // l'utilises JAMAIS après l'emprunt mutable, est-ce que ça compile ?
+    //
+    println!("»»» EXERCICE 7 »»»");
+    let mut mut_string = String::from("Cromesquis est une chauve-souris");
+
+    fn ajouter_point(s: &mut String) -> &mut String {
+        s.push_str(" .");
+
+        s
+    }
+
+    fn emprunter_point(s: &String) -> &String {
+        s
+    }
+
+    // println!("{mut_string}");
+    // let var1 = ajouter_point(&mut mut_string);
+    // let var2 = ajouter_point(&mut mut_string); // cannot borrow mut_string as mutable more than once at a time
+    // second mutable borrow occurs here (rustc E0499)
+    // println!("{var1}");
+    // println!("{var2}");
+
+    let _emprunt_immuable = emprunter_point(&mut_string);
+    println!("{mut_string}");
+    let var1 = ajouter_point(&mut mut_string);
+    println!("{var1}");
+
+    let var2 = ajouter_point(&mut mut_string);
+    println!("{var2}");
+
+    // a) la variable initiale et le paramètre s doivent tous les deux être mutables pour que ça fonctionne
+    // l'erreur E0596 est provoquée quand le paramètre n'est pas mutable
+    // c) j'ai pas vraiment compris la consigne
 
     // -----------------------------------------------------------------
     // EX. 8 — Slices                                       [ch. 4.3]
@@ -198,6 +248,29 @@ fn main() {
     // chaîne source avec `.clear()` AVANT de l'afficher.
     //   a) Note le code d'erreur
     //   b) Quel bug classique de JS cette erreur rend-elle impossible ?
+    println!("»»» EXERCICE 8 »»»");
+    fn dernier_mot(s: &str) -> &str {
+        let bytes = s.as_bytes();
+        let mut last_index: usize = 0;
+
+        for (index, &item) in bytes.iter().enumerate() {
+            if item == b' ' {
+                last_index = index + 1;
+            }
+        }
+
+        &s[last_index..]
+    }
+
+    let super_string = String::from("Furimi est la plus douce");
+    let last_word = dernier_mot(&super_string);
+    // super_string.clear();
+    println!("last word is {last_word}");
+
+    // a) erreur => cannot borrow super_string as mutable because it is also borrowed as immutable
+    // mutable borrow occurs here (rustc E0502)
+    // b) invalidation d'itérateur (ou de référence)
+    //
 
     // -----------------------------------------------------------------
     // EX. 9 — UTF-8 et frontières de caractères            [ch. 4.3]
@@ -215,21 +288,88 @@ fn main() {
     //
     // Question : pourquoi cette recherche est-elle garantie de
     //            s'arrêter, et pourquoi est-elle si rapide ?
+    //
+    // a) é prend deux octets, ☕ en prend trois (c'est un caractère unicode ancien, pas un emoji)
+    println!("»»» EXERCICE 9 »»»");
+    let coffee_string = String::from("café ☕");
+    println!("length is {}", coffee_string.len());
+
+    // b) Je pense que [0..4] va paniquer car 4 tombe au milieu du "é" qui prend deux octets à cause de l'accent
+    // effectivement j'obtiens l'erreur thread 'main' (8831942) panicked at src/main.rs:297:39:
+    // end byte index 4 is not a char boundary; it is inside 'é' (bytes 3..5 of string)
+    // let _coffe_slice1 = &coffee_string[0..4];
+    let _coffee_slice2 = &coffee_string[0..3];
+
+    // c)
+    let mut boundary_index: usize = 4;
+
+    while !coffee_string.is_char_boundary(boundary_index) {
+        boundary_index -= 1;
+    }
+
+    println!("Boundary index is {boundary_index}");
+    println!("{}", &coffee_string[..boundary_index]);
+
+    // réposne à la question: L'indice 0 est toujours une frontière. Usize ne peut pas descendre en dessous de 0. is_char_boundary est 0(1), il ne lit qu'un octet et regarde ses bits de tête: un octet de continuation commence toujours par 10xxxxxx
 
     // -----------------------------------------------------------------
     // EX. 10 — Définir une struct                          [ch. 5.1]
     // -----------------------------------------------------------------
     // Définis `Livre { titre: String, pages: u32, emprunte: bool }`.
-    //
+
+    println!("»»» EXERCICE 10 »»»");
+    struct Livre {
+        // titre: &str,
+        titre: String,
+        pages: u32,
+        emprunte: bool,
+    }
+
     //   a) Crée une instance, affiche ses trois champs
+    let livre = Livre {
+        titre: String::from("Terreur à Maulini"),
+        pages: 1200,
+        emprunte: false,
+    };
+
+    println!(
+        "Le titre du livre est {}, il fait {} pages. Il est actuellement {}",
+        livre.titre,
+        livre.pages,
+        {
+            if livre.emprunte {
+                "emprunté"
+            } else {
+                "disponible"
+            }
+        }
+    );
     //   b) Écris `nouveau(titre: String, pages: u32) -> Livre` qui met
     //      `emprunte` à false. Utilise le FIELD INIT SHORTHAND.
+    fn nouveau(titre: String, pages: u32) -> Livre {
+        Livre {
+            titre,
+            pages,
+            emprunte: false,
+        }
+    }
+
+    let mut livre2 = nouveau(String::from("Coup de foudre à Maulini"), 500);
     //   c) Rends un livre empruntable : change `emprunte` à true après
     //      coup. Qu'as-tu dû ajouter, et où ?
-    //
+    // j'ai du rendre toute l'instance mutable
+    livre2.emprunte = true;
+
     // Question : pourquoi `titre: String` et non `titre: &str` ?
     //            Essaie `&str` et lis l'erreur — elle nomme une notion
     //            que tu n'as pas encore vue. Laquelle ?
+    //
+    // mettre String au lieu d'une référence &str permet de s'assurer que les données restent valides
+    // pendant toute la durée de vie de l'instance
+    // si je remplace par &str j'obtiens l'erreur
+    // missing lifetime specifier expected named lifetime parameter (rustc E0106)
+    // je suppose qu'il faudrait ajouter un lifetime parameter comme static et passer en argument un string literal
+    // pour s'assurer de la validité de la valeur pendant la durée de vie de l'instance
 
     // -----------------------------------------------------------------
     // EX. 11 — Tuple structs et typage nominal             [ch. 5.1]
