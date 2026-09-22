@@ -565,6 +565,133 @@ ne possède rien       → rien à libérer  → autant de copies qu'on veut →
 
 ---
 
+## Série d'exercices 1–13 (2026-09-20 → 09-22)
+
+Fichier : `src/main.rs`. Révision de ch. 1/3/2/4/5.1 + RBE ch. 1.
+Notions rencontrées **en pratique avant d'être lues dans le Book**.
+
+### Pointeur gras (*fat pointer*)
+
+Taille du **paramètre lui-même**, mesurée :
+
+| Type | Taille | Contenu |
+|---|---|---|
+| `&i32`, `&String` | **8 o** | une adresse |
+| `&str`, `&[u8]` | **16 o** | adresse **+ longueur** |
+
+- Une reference vers une `String` n'a pas besoin de la longueur : elle est déjà
+  dans la struct, au bout du pointeur.
+- Une slice vise **des octets bruts au milieu d'une chaîne** : rien n'indique où
+  elle s'arrête, donc la longueur voyage **dans la reference**.
+- 💡 C'est ce qui permet à `&s[2..5]` d'exister sans rien allouer.
+- `taille(&string)` compile pour `fn taille(s: &str)` : ***deref coercion***,
+  `&String` → `&str` automatique.
+
+### ⚠️ NLL — un emprunt meurt à sa **dernière utilisation**
+
+*Non-lexical lifetimes.* Les deux extraits ne diffèrent que par la **position de
+la dernière lecture** de la vue :
+
+```rust
+let vue = &s;                 let vue = &s;
+s.push_str(" monde");         println!("{vue}");     // dernière utilisation
+println!("{vue}");            s.push_str(" monde");  // OK
+// E0502                      // compile
+```
+
+- Message clé : *« immutable borrow **later used** here »*. C'est l'usage
+  ultérieur qui déclenche l'erreur, pas la coexistence.
+- ⚠️ Faux ami JS : en JS une variable vit jusqu'à la fin de son bloc. Le borrow
+  checker raisonne sur les **usages**, pas sur les accolades.
+
+### ⚠️ `usize` : débordement en soustraction
+
+`while i >= 0` sur un `usize` → `warning: comparison is useless due to type
+limits` (`unused_comparisons`) : un non-signé est **toujours** ≥ 0.
+
+Et corriger la comparaison n'aurait rien réglé — `0usize - 1` :
+
+| Profil | Comportement |
+|---|---|
+| **debug** (`cargo run`) | **panique** : *attempt to subtract with overflow* |
+| **release** (`--release`) | **boucle silencieusement** à `usize::MAX` |
+
+- ⚠️ **Un bug qui n'existe qu'en production.** Les vérifications de débordement
+  sont désactivées en release.
+- 💡 Leçon de conception : quand une boucle exige une garde compliquée, c'est
+  souvent qu'elle **teste la mauvaise chose**. Ici, conditionner sur
+  `!is_char_boundary(i)` rend le débordement *structurellement* impossible —
+  l'indice 0 étant toujours une frontière, la boucle ne peut pas l'atteindre.
+
+### Taille UTF-8 selon le point de code
+
+| Point de code | Octets | Exemples |
+|---|---|---|
+| `U+0000`–`U+007F` | **1** | ASCII, espace, ponctuation |
+| `U+0080`–`U+07FF` | **2** | `é` `ß` `Ω` `д`, arabe, hébreu |
+| `U+0800`–`U+FFFF` | **3** | `€` **`☕`** `文`, symboles, CJK |
+| `U+10000`–`U+10FFFF` | **4** | `😀` `🦀`, vrais emoji |
+
+- ⚠️ **« emoji » n'est pas une catégorie de taille.** `☕` = `U+2615`, dans le
+  BMP → **3 octets**, comme `€`. Les emoji colorés modernes sont au-dessus de
+  `U+FFFF` → 4 octets.
+- `"café ☕"` = 9 octets : 3 ASCII + `é` (2) + espace (1) + `☕` (3).
+- `c.len_utf8()` donne la réponse sans deviner.
+- Garanties de la recherche de frontière : **0 est toujours une frontière**
+  (d'où l'arrêt), **au plus 3 crans** (4 octets max), et `is_char_boundary` est
+  **O(1)** — il lit un seul octet et regarde ses bits de tête.
+
+### ⚠️ `match` est une **expression**, typée par ses branches
+
+```rust
+let x = match saisie.trim().parse::<i32>() {
+    Ok(n)  => n / 2,      // i32
+    Err(_) => { …; 0 }    // i32
+};                        // -> l'expression vaut i32, PAS Result
+```
+
+- ❌ Erreur commise : « le `match` produit un `Result` ». **Non** — il en
+  **consomme** un. Le `Result` entre, le pattern matching l'ouvre, la valeur
+  utile sort.
+- Rust **exige que toutes les branches aient le même type**, sinon le type de
+  l'expression serait indécidable.
+- 💡 Clippy `let_and_return` : inutile de passer par `let x = match {…}; x` —
+  le `match` peut être la dernière expression de la fonction.
+
+### ⚠️ `unwrap_or` vs branche `Err` : le défaut n'agit pas au même endroit
+
+```rust
+Err(_) => 0                 // le défaut est le RÉSULTAT
+.unwrap_or(0)  puis  / 2    // le défaut est l'ENTRÉE, ensuite transformée
+```
+
+Avec `0` les deux coïncident (`0 / 2 == 0`) ; **avec `10`, l'un rend `10` et
+l'autre `5`**. Coïncidence trompeuse à ne pas généraliser.
+
+### Déstructurer une tuple struct : le **nom du type** fait partie du motif
+
+```rust
+let (x) = Pieds(1.0);     // ⚠️ PAS une déstructuration : parenthèses inutiles
+                          // warning: unnecessary parentheses around pattern
+                          // x est un Pieds entier -> il faut encore x.0
+let Pieds(valeur) = p;    // ✅ valeur est un f64
+let (a, b) = (1.0, 2.0);  // tuple NU : aucun nom de type
+```
+
+### Typage nominal : aucune conversion implicite, même vers le type enveloppé
+
+`fn en_pieds(m: Metres)` refuse un `Pieds` **et** un `f64` nu — `E0308` dans les
+deux cas. `Metres` n'est pas « un `f64` étiqueté », c'est un **type neuf** ;
+il faut écrire `Metres(x)`.
+
+### Mutabilité : pas de granularité par champ
+
+Modifier un seul champ exige que **l'instance entière** soit `mut`. Aucun
+équivalent du `readonly` par champ de TS. Vaut aussi pour les emprunts :
+`&mut livre` verrouille toute la struct.
+
+---
+
 ## Chapitre 5 — Structs (en cours)
 
 Fichier : `src/the-book/5-structures.rs` — compile sans erreur **ni warning**.

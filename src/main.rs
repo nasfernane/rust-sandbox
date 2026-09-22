@@ -167,21 +167,21 @@ fn main() {
     //   b) Le paramètre `s` lui-même (pas la chaîne pointée) occupe
     //      combien d'octets dans les deux cas ? Pourquoi la différence ?
     //
-    println!("»»» EXERCICE 6 »»»");
-    let string = String::from("Furimi est soyeuse");
+    // println!("»»» EXERCICE 6 »»»");
+    // let string = String::from("Furimi est soyeuse");
 
     // fn taille(s: &String) -> usize {
     //     s.len()
     // }
 
-    fn taille(s: &str) -> usize {
-        s.len()
-    }
+    // fn taille(s: &str) -> usize {
+    //     s.len()
+    // }
 
-    let length = taille(&string);
+    // let length = taille(&string);
 
-    println!("{string}");
-    println!("Length is {length}");
+    // println!("{string}");
+    // println!("Length is {length}");
 
     // a) avec s: &str, la fonction accepte aussi les string literals
     // b) 16 octets car &str utilise un pointeur gras (avec la longueur)
@@ -201,18 +201,18 @@ fn main() {
     // [PRÉDIS] avant (c) : si tu crées l'emprunt immuable mais ne
     // l'utilises JAMAIS après l'emprunt mutable, est-ce que ça compile ?
     //
-    println!("»»» EXERCICE 7 »»»");
-    let mut mut_string = String::from("Cromesquis est une chauve-souris");
+    // println!("»»» EXERCICE 7 »»»");
+    // let mut mut_string = String::from("Cromesquis est une chauve-souris");
 
-    fn ajouter_point(s: &mut String) -> &mut String {
-        s.push_str(" .");
+    // fn ajouter_point(s: &mut String) -> &mut String {
+    //     s.push_str(" .");
 
-        s
-    }
+    //     s
+    // }
 
-    fn emprunter_point(s: &String) -> &String {
-        s
-    }
+    // fn emprunter_point(s: &String) -> &String {
+    //     s
+    // }
 
     // println!("{mut_string}");
     // let var1 = ajouter_point(&mut mut_string);
@@ -221,13 +221,13 @@ fn main() {
     // println!("{var1}");
     // println!("{var2}");
 
-    let _emprunt_immuable = emprunter_point(&mut_string);
-    println!("{mut_string}");
-    let var1 = ajouter_point(&mut mut_string);
-    println!("{var1}");
+    // let _emprunt_immuable = emprunter_point(&mut_string);
+    // println!("{mut_string}");
+    // let var1 = ajouter_point(&mut mut_string);
+    // println!("{var1}");
 
-    let var2 = ajouter_point(&mut mut_string);
-    println!("{var2}");
+    // let var2 = ajouter_point(&mut mut_string);
+    // println!("{var2}");
 
     // a) la variable initiale et le paramètre s doivent tous les deux être mutables pour que ça fonctionne
     // l'erreur E0596 est provoquée quand le paramètre n'est pas mutable
@@ -248,24 +248,24 @@ fn main() {
     // chaîne source avec `.clear()` AVANT de l'afficher.
     //   a) Note le code d'erreur
     //   b) Quel bug classique de JS cette erreur rend-elle impossible ?
-    println!("»»» EXERCICE 8 »»»");
-    fn dernier_mot(s: &str) -> &str {
-        let bytes = s.as_bytes();
-        let mut last_index: usize = 0;
+    // println!("»»» EXERCICE 8 »»»");
+    // fn dernier_mot(s: &str) -> &str {
+    //     let bytes = s.as_bytes();
+    //     let mut last_index: usize = 0;
 
-        for (index, &item) in bytes.iter().enumerate() {
-            if item == b' ' {
-                last_index = index + 1;
-            }
-        }
+    //     for (index, &item) in bytes.iter().enumerate() {
+    //         if item == b' ' {
+    //             last_index = index + 1;
+    //         }
+    //     }
 
-        &s[last_index..]
-    }
+    //     &s[last_index..]
+    // }
 
-    let super_string = String::from("Furimi est la plus douce");
-    let last_word = dernier_mot(&super_string);
-    // super_string.clear();
-    println!("last word is {last_word}");
+    // let super_string = String::from("Furimi est la plus douce");
+    // let last_word = dernier_mot(&super_string);
+    // // super_string.clear();
+    // println!("last word is {last_word}");
 
     // a) erreur => cannot borrow super_string as mutable because it is also borrowed as immutable
     // mutable borrow occurs here (rustc E0502)
@@ -290,25 +290,25 @@ fn main() {
     //            s'arrêter, et pourquoi est-elle si rapide ?
     //
     // a) é prend deux octets, ☕ en prend trois (c'est un caractère unicode ancien, pas un emoji)
-    println!("»»» EXERCICE 9 »»»");
-    let coffee_string = String::from("café ☕");
-    println!("length is {}", coffee_string.len());
+    // println!("»»» EXERCICE 9 »»»");
+    // let coffee_string = String::from("café ☕");
+    // println!("length is {}", coffee_string.len());
 
     // b) Je pense que [0..4] va paniquer car 4 tombe au milieu du "é" qui prend deux octets à cause de l'accent
     // effectivement j'obtiens l'erreur thread 'main' (8831942) panicked at src/main.rs:297:39:
     // end byte index 4 is not a char boundary; it is inside 'é' (bytes 3..5 of string)
     // let _coffe_slice1 = &coffee_string[0..4];
-    let _coffee_slice2 = &coffee_string[0..3];
+    // let _coffee_slice2 = &coffee_string[0..3];
 
-    // c)
-    let mut boundary_index: usize = 4;
+    // // c)
+    // let mut boundary_index: usize = 4;
 
-    while !coffee_string.is_char_boundary(boundary_index) {
-        boundary_index -= 1;
-    }
+    // while !coffee_string.is_char_boundary(boundary_index) {
+    //     boundary_index -= 1;
+    // }
 
-    println!("Boundary index is {boundary_index}");
-    println!("{}", &coffee_string[..boundary_index]);
+    // println!("Boundary index is {boundary_index}");
+    // println!("{}", &coffee_string[..boundary_index]);
 
     // réposne à la question: L'indice 0 est toujours une frontière. Usize ne peut pas descendre en dessous de 0. is_char_boundary est 0(1), il ne lit qu'un octet et regarde ses bits de tête: un octet de continuation commence toujours par 10xxxxxx
 
@@ -317,48 +317,48 @@ fn main() {
     // -----------------------------------------------------------------
     // Définis `Livre { titre: String, pages: u32, emprunte: bool }`.
 
-    println!("»»» EXERCICE 10 »»»");
-    struct Livre {
-        // titre: &str,
-        titre: String,
-        pages: u32,
-        emprunte: bool,
-    }
+    // println!("»»» EXERCICE 10 »»»");
+    // struct Livre {
+    //     // titre: &str,
+    //     titre: String,
+    //     pages: u32,
+    //     emprunte: bool,
+    // }
 
     //   a) Crée une instance, affiche ses trois champs
-    let livre = Livre {
-        titre: String::from("Terreur à Maulini"),
-        pages: 1200,
-        emprunte: false,
-    };
+    // let livre = Livre {
+    //     titre: String::from("Terreur à Maulini"),
+    //     pages: 1200,
+    //     emprunte: false,
+    // };
 
-    println!(
-        "Le titre du livre est {}, il fait {} pages. Il est actuellement {}",
-        livre.titre,
-        livre.pages,
-        {
-            if livre.emprunte {
-                "emprunté"
-            } else {
-                "disponible"
-            }
-        }
-    );
+    // println!(
+    //     "Le titre du livre est {}, il fait {} pages. Il est actuellement {}",
+    //     livre.titre,
+    //     livre.pages,
+    //     {
+    //         if livre.emprunte {
+    //             "emprunté"
+    //         } else {
+    //             "disponible"
+    //         }
+    //     }
+    // );
     //   b) Écris `nouveau(titre: String, pages: u32) -> Livre` qui met
     //      `emprunte` à false. Utilise le FIELD INIT SHORTHAND.
-    fn nouveau(titre: String, pages: u32) -> Livre {
-        Livre {
-            titre,
-            pages,
-            emprunte: false,
-        }
-    }
+    // fn nouveau(titre: String, pages: u32) -> Livre {
+    //     Livre {
+    //         titre,
+    //         pages,
+    //         emprunte: false,
+    //     }
+    // }
 
-    let mut livre2 = nouveau(String::from("Coup de foudre à Maulini"), 500);
+    // let mut livre2 = nouveau(String::from("Coup de foudre à Maulini"), 500);
     //   c) Rends un livre empruntable : change `emprunte` à true après
     //      coup. Qu'as-tu dû ajouter, et où ?
     // j'ai du rendre toute l'instance mutable
-    livre2.emprunte = true;
+    // livre2.emprunte = true;
 
     // Question : pourquoi `titre: String` et non `titre: &str` ?
     //            Essaie `&str` et lis l'erreur — elle nomme une notion
@@ -376,44 +376,140 @@ fn main() {
     // -----------------------------------------------------------------
     // Définis `Metres(f64)` et `Pieds(f64)`.
     // Écris `en_pieds(m: Metres) -> Pieds` (1 m = 3.28084 pieds).
-    //
+    println!("»»» EXERCICE 11 »»»");
+
+    struct Metres(f64);
+    struct Pieds(f64);
+
+    let metres = Metres(20.0);
+
+    fn en_pieds(m: Metres) -> Pieds {
+        Pieds(m.0 * 3.28084)
+    }
+
+    // let f: f64 = 20.0;
+
+    let pieds = en_pieds(metres);
+    println!("Transformé en {} pieds", pieds.0);
+
+    // let _pieds_a = pieds.0;
+    // println!("Transformé en {} pieds", _pieds_a);
+
+    let Pieds(_pieds) = pieds;
+    println!("Transformé en {} pieds", _pieds);
     //   a) Essaie de lui passer un `Pieds`. Code d'erreur ?
-    //   b) Essaie de lui passer un `f64` nu. Même erreur ?
+    // arguments to this function are incorrect -- expected Metres, found Pieds
+    //   b) Essaie de lui passer un `f64` nu. Même erreur ? => Oui c'est le même principe, mauvais type expected Metres, found f64
     //   c) En TypeScript, `type Metres = number` et `type Pieds = number`
     //      auraient-ils bloqué ces deux appels ? Pourquoi ?
+    // ça n'aurait pas bloqué car c'est le même type donc interchangeable en typescript
     //   d) Déstructure le résultat pour en extraire le f64.
     //      Deux façons : par `.0`, et par motif.
+    //
 
     // -----------------------------------------------------------------
     // EX. 12 — Partial move                                [ch. 5.1]
     // -----------------------------------------------------------------
+    println!("»»» EXERCICE 12 »»»");
     // Reprends `Livre` (deux champs `Copy`, un champ `String`).
     // Ajoute-lui un second champ `String` : `auteur`.
-    //
+    struct Livre {
+        titre: String,
+        auteur: String,
+        pages: u32,
+        emprunte: bool,
+    }
+
     // Crée `a`, puis `b` avec la syntaxe `..a`, en fournissant
     // explicitement UN SEUL des deux champs `String`.
+    let a = Livre {
+        titre: String::from("Terreur à Maulini"),
+        auteur: String::from("Cromesquis"),
+        pages: 3,
+        emprunte: false,
+    };
+
+    // let _b = Livre {
+    //     titre: String::from("Terreur sur l'esplanade"),
+    //     ..a
+    // };
+    println!("titre de a est {}", a.titre);
+    // println!("auteur de a est {}", a.auteur); // borrow of moved value: `a.auteur`
+    println!("pages de a est {}", a.pages);
+    println!("emprunte de a est {}", a.emprunte);
     //
     // [PRÉDIS] pour chacun des quatre champs : lequel reste lisible
     // depuis `a` après cette ligne ? Puis vérifie CHAMP PAR CHAMP.
+    // Seul le type String n'est pas Copy donc:
+    // titre: reste lisible car b crée son propre titre
+    // auteur: devient illisible car a donne la propriété de son champ auteur à b lors du move - confirmé par une erreur avant même la compilation
+    // pages: reste lisible - champ Copy donc valeur dupliquée lors du move
+    // emprunte: reste lisible - champ Copy donc valeur dupliquée lors du move
     //
     // Ensuite : fais en sorte que `a` reste ENTIÈREMENT utilisable
     // après la création de `b`. Quel est le coût de ta solution ?
+    let _c = Livre {
+        titre: String::from("Terreur sur l'esplanade"),
+        auteur: a.auteur.clone(),
+        ..a
+    };
+
+    // le coût de cette solution est une duplication d'une même donnée "complexe" en mémoire
 
     // -----------------------------------------------------------------
     // EX. 13 — Result, match, expect                       [ch. 2]
     // -----------------------------------------------------------------
+    println!("»»» EXERCICE 13 »»»");
     // Écris `moitie(saisie: &str) -> i32` qui parse la chaîne et renvoie
     // la moitié de l'entier.
-    //
+
     // Écris-la en TROIS versions. Pour chacune, dis ce qui se passe sur
     // l'entrée "abc" :
     //   a) avec `expect`
+    // fn moitie_expect(saisie: &str) -> i32 {
+    //     let parsed_number: i32 = saisie
+    //         .trim()
+    //         .parse()
+    //         .expect("Saisie devrait etre un nombre valide");
+
+    //     parsed_number / 2
+    // };
+
+    // let value_expect = moitie_expect("abc");
+    // println!("result is {value_expect}");
+    // j'obtiens l'erreur suivante
+    // thread 'main' (10636132) panicked at src/main.rs:471:14:
+    // Saisie devrait etre un nombre valide: ParseIntError { kind: InvalidDigit }
+    // expect provoque la sortie du processus
+    //
     //   b) avec `match`, en renvoyant 0 sur la branche `Err`
+    //
+    fn moitie_match(saisie: &str) -> i32 {
+        match saisie.trim().parse::<i32>() {
+            Ok(n) => n / 2,
+            Err(_) => {
+                println!("Saisie should be a valid number");
+                0
+            }
+        }
+    }
+
+    let value_match = moitie_match("abc");
+    println!("result is {value_match}");
+    // ici j'ai bien mon print et ma valeur par défaut sur 0 en cas d'erreur de parse
+    // le programme ne panique pas et continue
+    //
     //   c) avec `unwrap_or`
+    fn moitie_unwrap(saisie: &str) -> i32 {
+        saisie.trim().parse::<i32>().unwrap_or(0) / 2
+    }
+
+    let value_unwrap = moitie_unwrap("abc");
+    println!("result is {value_unwrap}");
     //
     // Questions :
-    //   - laquelle est l'équivalent honnête du `?? 0` de JS ?
-    //   - laquelle est un piège pour qui vient de JS, et pourquoi ?
+    //   - laquelle est l'équivalent honnête du `?? 0` de JS ? le unwrap_or mais j'obtiens le même résultat au final sur la version match, dans cette implémentation précise
+    //   - laquelle est un piège pour qui vient de JS, et pourquoi ? pour moi expect, car je m'attends à ce que ce soit un test
     //   - dans la version (b), quel est le TYPE de la valeur que le
-    //     `match` produit ?
+    //     `match` produit ? => type i32
 }
