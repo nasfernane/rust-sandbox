@@ -7,13 +7,33 @@
 
 ## État du parcours
 
-**Trois ressources menées en parallèle depuis le 2026-09-19** :
+**Quatre ressources menées en parallèle** (Exercism ajouté le 2026-09-24) :
 
-| Ressource | Rôle | Sources |
+| Ressource | Mode travaillé | Sources |
 |---|---|---|
-| [The Book](https://doc.rust-lang.org/book/) | fil directeur, le *pourquoi* | `src/the-book/` |
-| [Rust by Example](https://doc.rust-lang.org/rust-by-example) | variantes de syntaxe, le *comment* | `src/by-example/` |
-| [Rustlings](https://github.com/rust-lang/rustlings) | exercices à réparer soi-même | **autre dépôt** |
+| [The Book](https://doc.rust-lang.org/book/) | **compréhension** — le *pourquoi* | `src/the-book/` |
+| [Rust by Example](https://doc.rust-lang.org/rust-by-example) | **reconnaissance** — le *à quoi ça ressemble* | `src/by-example/` |
+| [Rustlings](https://github.com/rust-lang/rustlings) | **production** — correction automatique | autre dépôt |
+| [Exercism](https://exercism.org) | **production** — correction par un mentor humain | autre dépôt |
+
+**Pourquoi les ordres diffèrent autant** (question du 2026-09-24) :
+
+| Ressource | Ordonne par | Ownership arrive à |
+|---|---|---|
+| The Book | dépendance **conceptuelle** | ch. **4** / 21 → **19 %** |
+| RBE | dépendance **syntaxique** | ch. **15** / 24 → **62 %** |
+| Rustlings | gradation d'**exercices** | — |
+
+- L'ownership est une couche **sémantique quasiment sans syntaxe propre** (`=`,
+  `&`, un appel de fonction). Un tutoriel ordonné par la syntaxe peut donc le
+  repousser très loin sans jamais montrer de syntaxe inconnue ; un tutoriel
+  ordonné par les concepts ne le peut pas.
+- RBE s'en tire d'autant mieux que ses extraits sont **minuscules et jetables** :
+  le borrow checker mord rarement à cette échelle.
+- The Book est en **spirale**, pas linéaire : `Result` apparaît informellement au
+  ch. 2, formellement au ch. 9. Choix de **charge cognitive**, pas de rigueur.
+- ⚠️ Risque de mener les quatre de front : croire qu'avoir **vu** une notion
+  trois fois vaut l'avoir **comprise** une fois.
 
 ### The Book
 
@@ -30,6 +50,18 @@
 | Chapitre | Titre | État |
 |---|---|---|
 | 1 | Hello World / formatted print | 🔄 **en cours** — formatage |
+
+### Exercism — piste Rust
+
+| Exercice | État |
+|---|---|
+| Matching Brackets | ✅ fait — 15/15 cas, voir la section dédiée |
+
+⚠️ **Chaque exercice Exercism est un projet Cargo autonome** (son `Cargo.toml`,
+son `src/lib.rs`, ses `tests/`). Il ne peut donc pas vivre dans `rust-sandbox`,
+qui est un package unique. Dépôt séparé, **sans `Cargo.toml` à la racine** —
+sinon Cargo tente d'absorber les crates imbriquées et chacune échoue avec
+*« current package believes it's in a workspace when it's not »*.
 
 **Pourquoi ce détour 1 → 3 → 2 ?** Le Book lui-même suggère cet ordre à ceux qui
 préfèrent comprendre les fondations avant de coder un projet. Le chapitre 2 est
@@ -831,6 +863,194 @@ négatifs. Vérifié expérimentalement :
 **Traductions** : *right-justified* → **aligné à droite** (ou *cadré à droite*
 pour des colonnes de nombres). ⚠️ « justifié » seul, en typographie française,
 désigne le **double** alignement (les deux bords nets), pas le droit.
+
+
+## Tampons (*buffers*) — creusé le 2026-09-22
+
+> ⚠️ **« Buffer » ne désigne pas une structure de données, mais un RÔLE.**
+> Matériellement, c'est un tableau d'octets, rien d'autre. Chercher « c'est quoi
+> un buffer » comme on chercherait « c'est quoi un tableau » ne marche pas —
+> c'est comme demander « c'est quoi un stock ».
+
+**Le motif, toujours le même** : une opération est chère **à déclencher** mais
+pas beaucoup plus chère en gros volume → on accumule dans une zone d'attente et
+on déclenche rarement, sur de gros paquets. *To buffer* = amortir, tamponner un
+choc (comme le tampon d'un wagon).
+
+### Famille A — amortir l'ALLOCATION (`String`, `Vec`)
+
+```
+   PILE (24 o)                    TAS (le tampon)
+   ptr ──────────────────────►   [ h e l l o _ ]
+   len = 5                        ◄── cap = 6 ──►
+   cap = 6
+```
+
+Croissance mesurée, caractère par caractère :
+
+```
+ptr = 0x1          len=0  cap= 0   ← String::new() : AUCUNE allocation, ptr bidon
+ptr = 0x105635cf0  len=1  cap= 8   ← 1er push : 8 octets d'un coup
+ptr = 0x105635cf0  len=8  cap= 8   ← 7 push GRATUITS (place déjà réservée)
+ptr = 0x105635cf0  len=9  cap=16   ← débordement : cap DOUBLE
+```
+
+- 💡 **`cap` est presque toujours > `len`.** La marge est délibérée.
+- À la réallocation, Rust demande un nouveau tampon, **recopie** l'ancien et le
+  libère. Ici l'adresse n'a pas bougé (l'allocateur a étendu sur place) mais
+  **ce n'est pas garanti**.
+- ⚠️ **C'est la raison profonde du borrow checker sur les slices** : si le
+  tampon déménage, une slice pointerait vers de la mémoire **libérée**. D'où le
+  refus de muter une `String` empruntée. Rust n'invente pas une contrainte, il
+  interdit un pointeur qui peut se périmer.
+- `String::with_capacity(1000)` → **0 réallocation** contre **8** avec
+  `String::new()` (paliers 8, 16, 32… 1024), chacune impliquant une recopie.
+
+### Famille B — amortir l'ENTRÉE/SORTIE (`BufWriter`, Node)
+
+Écrire exige un **appel système** : bascule en mode noyau, des milliers de
+cycles — quel que soit le volume. Écrire 1 octet coûte presque autant que 8 000.
+
+Mesuré sur 200 000 lignes écrites dans un fichier :
+
+| | Temps | Appels système |
+|---|---|---|
+| sans tampon | **823,72 ms** | 200 000 |
+| avec `BufWriter` | **5,70 ms** | ~250 |
+| | **144× plus rapide** | fichiers **identiques octet pour octet** |
+
+- 💡 **`flush()`** (*vider*) = « pars maintenant, même si le chariot n'est pas
+  plein ». Automatique quand le `BufWriter` sort de portée — mais **personne ne
+  le fait si le programme se termine brutalement**, d'où les dernières lignes
+  manquantes après un crash.
+- `println!` et `console.log` écrivent tous deux dans un tampon, pas à l'écran.
+
+### Modèle mental — trois questions suffisent
+
+1. Quelle opération coûteuse amortit-on ? (allocation ? appel système ?)
+2. Où est la réserve ?
+3. Quand est-elle vidée ? (pleine, ou `flush` explicite)
+
+### Créer un tampon à la main : Rust peut, il n'a juste pas de type `Buffer`
+
+| Node/JS | Rust |
+|---|---|
+| `Buffer.alloc(1024)` | `vec![0u8; 1024]` (len 1024) |
+| `Buffer.allocUnsafe(1024)` | `Vec::with_capacity(1024)` (len **0**, cap 1024) |
+| `new Uint8Array(1024)` | `[0u8; 1024]` (**pile**, zéro allocation) |
+| — | `String::with_capacity(n)`, `BufWriter::with_capacity(n, f)` |
+
+- Rust nomme les types d'après **ce qu'ils sont**, pas d'après leur usage. Et il
+  sépare trois rôles que Node fusionne : `Vec<u8>` **possède** les octets,
+  `&[u8]` les **regarde**, `BufWriter` est le **comportement** de tamponnage
+  (un emballage applicable à un fichier, une socket, `stdout`…).
+- ⚠️ Pourquoi c'est flou en venant de JS : on n'y alloue **jamais** — V8 fait
+  exactement la même chose (réservation, doublement, réallocation) sans exposer
+  ni `.capacity()` ni `ptr`.
+
+---
+
+## Exercism — *Matching Brackets* (2026-09-24/25)
+
+### La notion : une PILE (*stack*), principe **LIFO**
+
+*Last in, first out* — dernier entré, premier sorti. En lisant `{[()]}` de
+gauche à droite, chaque fermeture referme **toujours la dernière ouverture
+encore en attente** :
+
+```
+{   en attente : {          )   ferme le (   reste : { [
+[   en attente : { [        ]   ferme le [   reste : {
+(   en attente : { [ (      }   ferme le {   reste : ∅
+```
+
+💡 **Même mot que la pile mémoire du ch. 4, et ce n'est pas un homonyme** : la
+pile d'appels fonctionne ainsi pour la même raison — une fonction qui se termine
+est toujours la dernière appelée encore en cours.
+
+### L'algorithme
+
+1. ouvrant → **empiler**
+2. fermant → **dépiler** ; rien à dépiler **ou** mauvaise correspondance → `false`
+3. autre caractère → ignorer
+4. ⚠️ fin de chaîne → `true` **seulement si la pile est vide** (piège : `"{{"`
+   atteint la fin sans jamais déclencher d'erreur)
+
+### Fausses pistes explorées, et ce qu'elles ont appris
+
+- ❌ **Couper la chaîne en deux moitiés et comparer.** Ne marche que pour les
+  imbrications pures ; s'effondre sur `"()()"` et `"}{"`.
+- ⚠️ Cette version mélangeait `chars().count()` (**caractères**) et `&s[..n]`
+  (**indice d'octet**) — passait uniquement parce que les crochets sont ASCII.
+- ✅ **Supprimer les paires collées jusqu'à épuisement** : algorithme **correct**
+  (trouvé seul), mais O(n²) et pénible en Rust (suppression au milieu d'une
+  `String` = indices d'octets + décalage). C'est la même règle que la pile, vue
+  de l'intérieur au lieu de la gauche.
+- 💡 **Beaucoup de bugs UTF-8 sont des bugs de conception déguisés** : la version
+  finale gère `"{é(à)}"` sans effort, parce qu'elle itère sur `.chars()` et ne
+  découpe jamais.
+
+### ⚠️ Deux tableaux parallèles = une béquille JS
+
+`opening_chars` / `closing_chars` indexés en parallèle simulent ce que JS n'a
+pas : une expression qui transforme une valeur selon des cas. En Rust c'est
+`match`, résolu **à la compilation** (saut direct, aucune itération).
+
+- Risque éliminé : réordonner un seul des deux tableaux compile toujours et
+  devient **faux silencieusement**. Avec `match`, la paire est sur une ligne.
+- ⚠️ **Il n'existe aucun moyen de chercher dans un tableau non trié sans
+  itérer.** `indexOf` en JS itère aussi — la boucle est juste cachée.
+  `contains()` itère également. L'équivalent exact est
+  `.iter().position(|&x| x == c)` (ch. 13).
+
+### Détails d'écriture relevés
+
+- `Some('(')` en motif teste **en même temps** qu'il y a quelque chose et que
+  c'est le bon caractère — deux vérifications en un seul motif.
+- `String::pop()` renvoie un `Option<char>` : le cas « pile vide » **ne peut pas
+  échapper silencieusement**, contrairement à un `undefined`.
+- ⚠️ **`continue` en dernière instruction d'une boucle est redondant** : il
+  saute là où l'on serait arrivé de toute façon. La branche qui ne fait rien
+  s'écrit `{}` (valeur `()`).
+- `continue` et `return` ont pour type **`!`** (*never*) : ils s'unifient avec
+  n'importe quel type d'arme. C'est pour ça que des `true` étaient nécessaires
+  tant qu'une arme valait `bool`, et inutiles une fois toutes les armes à `()`.
+- Clippy : `len() == 0` → **`is_empty()`** (sur certains types `len()` doit
+  parcourir la structure).
+- ⚠️ `char` comme nom de variable est **légal** (espaces de noms distincts) mais
+  brouille la lecture — c'est un nom de type.
+
+---
+
+## Projets personnels en attente
+
+### `vroom` — camion ASCII qui nettoie le terminal (idée du 2026-09-25)
+
+Outil CLI : une commande efface la console en y faisant passer un gros camion en
+ASCII. **Faisable intégralement avec les notions déjà vues.**
+
+Briques :
+
+| Besoin | Moyen |
+|---|---|
+| effacer l'écran | `\x1B[2J` puis `\x1B[H` (`\x1B[3J` pour l'historique) |
+| cacher le curseur | `\x1B[?25l` / `\x1B[?25h` |
+| animer | boucle + `std::thread::sleep(Duration::from_millis(~40))` |
+| le camion | tableau de `&str`, une ligne par rangée ; décalage = espaces |
+| largeur du terminal | **absent de `std`** → crate `terminal_size`/`crossterm`, ou 80 en dur |
+
+- ⚠️ **Le piège garanti : `stdout` est tamponné.** Sans `flush()` après chaque
+  image, soit rien ne s'affiche, soit tout apparaît d'un coup à la fin. Et
+  `flush` vit sur le trait `std::io::Write`, absent du prélude → **`E0599`**
+  (troisième occurrence du même symptôme).
+- ⚠️ Si le dessin contient de l'Unicode (`─`, `█`), ni `.len()` ni
+  `.chars().count()` ne donnent la **largeur d'affichage** — certains caractères
+  occupent deux colonnes. Rester en ASCII d'abord.
+- **Chapitre 12 du Book** (*An I/O Project: Building a Command Line Program*)
+  donne exactement ce qui manque : arguments de la ligne de commande, structure
+  d'un binaire, séparation de la logique et du `main`.
+- Commencer en version dégradée **dès maintenant** (largeur en dur, aucun
+  argument), enrichir au fil des chapitres.
 
 
 ## Transversal — concepts hors chapitre
