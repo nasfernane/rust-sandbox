@@ -47,7 +47,7 @@ fn main() {
             // None => None, // si on supprime ce bras, erreur E0004
             // deux façons d'attraper n'importe quelle autre valeur
             // other => plus_one(other), // other récupère et lie la valeur
-            _ => None, // _ récupère mais ne lie pas la valeur
+            _ => None, // _ ignore la valeur
         }
     }
 
