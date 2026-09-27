@@ -17,42 +17,42 @@ fn main() {
     // -----------------------------------------------------------------
     // Définis `Temperature { celsius: f64 }`.
     //
-    #[derive(Debug)]
-    struct Temperature {
-        celsius: f64,
-    }
+    // #[derive(Debug)]
+    // struct Temperature {
+    //     celsius: f64,
+    // }
 
-    impl Temperature {
-        fn en_fahrenheit(&self) -> f64 {
-            self.celsius * 1.8 + 32.0
-        }
+    // impl Temperature {
+    //     fn en_fahrenheit(&self) -> f64 {
+    //         self.celsius * 1.8 + 32.0
+    //     }
 
-        fn depuis_fahrenheit(f: f64) -> Self {
-            Self {
-                celsius: (f - 32.0) / 1.8,
-            }
-        }
+    //     fn depuis_fahrenheit(f: f64) -> Self {
+    //         Self {
+    //             celsius: (f - 32.0) / 1.8,
+    //         }
+    //     }
 
-        fn est_gelee(&self) -> bool {
-            self.celsius <= 0.0
-        }
-    }
+    //     fn est_gelee(&self) -> bool {
+    //         self.celsius <= 0.0
+    //     }
+    // }
 
-    let temp = Temperature { celsius: 32.0 };
-    let temp_f = temp.en_fahrenheit();
-    println!(
-        "Une température de {}°C correspond à {}F",
-        temp.celsius, temp_f
-    );
+    // let temp = Temperature { celsius: 32.0 };
+    // let temp_f = temp.en_fahrenheit();
+    // println!(
+    //     "Une température de {}°C correspond à {}F",
+    //     temp.celsius, temp_f
+    // );
 
-    let temp_from_f = Temperature::depuis_fahrenheit(89.6);
-    println!("Température depuis 89.6F donne {}", temp_from_f.celsius);
+    // let temp_from_f = Temperature::depuis_fahrenheit(89.6);
+    // println!("Température depuis 89.6F donne {}", temp_from_f.celsius);
 
-    if temp_from_f.est_gelee() {
-        println!("ça caille un peu");
-    } else {
-        println!("Il fait bon en fait");
-    }
+    // if temp_from_f.est_gelee() {
+    //     println!("ça caille un peu");
+    // } else {
+    //     println!("Il fait bon en fait");
+    // }
 
     //   a) `en_fahrenheit(&self) -> f64`          (°F = °C × 1.8 + 32)
     //   b) `depuis_fahrenheit(f: f64) -> Self`    fonction associée
@@ -79,24 +79,24 @@ fn main() {
     //   b) `consommer(self) -> f64`               rend le celsius et
     //                                             détruit l'instance
     //
-    impl Temperature {
-        fn rechauffer(&mut self, degres: f64) {
-            self.celsius += degres;
-        }
+    // impl Temperature {
+    //     fn rechauffer(&mut self, degres: f64) {
+    //         self.celsius += degres;
+    //     }
 
-        fn consommer(self) -> f64 {
-            self.celsius
-        }
-    }
+    //     fn consommer(self) -> f64 {
+    //         self.celsius
+    //     }
+    // }
 
-    let mut temp2 = Temperature { celsius: 24.2 };
-    println!("Température initiale {}", temp2.celsius);
+    // let mut temp2 = Temperature { celsius: 24.2 };
+    // println!("Température initiale {}", temp2.celsius);
 
-    temp2.rechauffer(2.5);
-    println!("Température après réchauffement {}", temp2.celsius);
+    // temp2.rechauffer(2.5);
+    // println!("Température après réchauffement {}", temp2.celsius);
 
-    let celsius = temp2.consommer();
-    println!("La temp consommée: {}", celsius);
+    // let celsius = temp2.consommer();
+    // println!("La temp consommée: {}", celsius);
 
     // println!("{}", temp2.celsius); // on ne peut plus utiliser l'instance
 
@@ -119,14 +119,14 @@ fn main() {
     // Affiche une `Temperature` de trois manières :
     //   a) `{:?}`     b) `{:#?}`     c) `dbg!`
 
-    let temp3 = Temperature {
-        celsius: 25.7897770078,
-    };
+    // let temp3 = Temperature {
+    //     celsius: 25.7897770078,
+    // };
 
-    println!("Première temp {:?}", temp3);
-    println!("Deuxième temp {:#?}", temp3);
-    // let temp3 = dbg!(temp3);
-    dbg!(temp3);
+    // println!("Première temp {:?}", temp3);
+    // println!("Deuxième temp {:#?}", temp3);
+    // // let temp3 = dbg!(temp3);
+    // dbg!(temp3);
     // Questions :
     //   - qu'est-ce qui change entre (a) et (b) ?
     //  le # de (b) est le drapeau alternatif. Il ajoute un formatage (une ligne par champ, indentation et virgule finale sur le dernier champ)
@@ -165,40 +165,40 @@ fn main() {
         The,
     }
 
-    impl Boisson {
-        fn prix_centimes(&self) -> u32 {
-            match self {
-                Boisson::Expresso => 300,
-                Boisson::Allonge { eau_ml } => eau_ml * 3,
-                Boisson::Latte(vol, sucre) => vol * 3 + 50 + if *sucre { 50 } else { 0 },
-                Boisson::The => 350,
-                // _ => 350,
-            }
-        }
+    // impl Boisson {
+    //     fn prix_centimes(&self) -> u32 {
+    //         match self {
+    //             Boisson::Expresso => 300,
+    //             Boisson::Allonge { eau_ml } => eau_ml * 3,
+    //             Boisson::Latte(vol, sucre) => vol * 3 + 50 + if *sucre { 50 } else { 0 },
+    //             Boisson::The => 350,
+    //             // _ => 350,
+    //         }
+    //     }
 
-        fn mention_sucre(&self) -> Option<String> {
-            let Boisson::Latte(_, sucre) = self else {
-                return None;
-            };
+    //     fn mention_sucre(&self) -> Option<String> {
+    //         let Boisson::Latte(_, sucre) = self else {
+    //             return None;
+    //         };
 
-            Some(format!("{} sucre", if *sucre { "Avec" } else { "Sans" }))
-        }
-    }
+    //         Some(format!("{} sucre", if *sucre { "Avec" } else { "Sans" }))
+    //     }
+    // }
 
-    let expresso = Boisson::Expresso;
-    let allonge = Boisson::Allonge { eau_ml: 150 };
-    let latte = Boisson::Latte(200, true);
+    // let expresso = Boisson::Expresso;
+    // let allonge = Boisson::Allonge { eau_ml: 150 };
+    // let latte = Boisson::Latte(200, true);
 
-    println!("Prix d'un expresso: {}", expresso.prix_centimes());
-    println!("Prix d'un allonge: {}", allonge.prix_centimes());
+    // println!("Prix d'un expresso: {}", expresso.prix_centimes());
+    // println!("Prix d'un allonge: {}", allonge.prix_centimes());
 
-    let latte_str_base = format!("Prix d'un latte: {}", latte.prix_centimes());
-    let latte_str = match latte.mention_sucre() {
-        None => latte_str_base,
-        Some(val) => format!("{latte_str_base} - {val}"),
-    };
+    // let latte_str_base = format!("Prix d'un latte: {}", latte.prix_centimes());
+    // let latte_str = match latte.mention_sucre() {
+    //     None => latte_str_base,
+    //     Some(val) => format!("{latte_str_base} - {val}"),
+    // };
 
-    println!("{}", latte_str);
+    // println!("{}", latte_str);
     // Question : pourquoi un enum plutôt que trois structs distinctes ?
     //            Écris la réponse en une phrase — c'est la raison d'être
     //            des enums à données.
@@ -234,22 +234,22 @@ fn main() {
     //   Some(n)   -> "note : {n}"
     //   None      -> "pas encore notée"
     //
-    fn etiquette(note: Option<u32>) -> String {
-        match note {
-            Some(20) => String::from("parfait"),
-            Some(n) => format!("note: {n}"),
-            // None => "Pas encore notée",
-            None => String::from("pas encore notée"),
-        }
-    }
+    // fn etiquette(note: Option<u32>) -> String {
+    //     match note {
+    //         Some(20) => String::from("parfait"),
+    //         Some(n) => format!("note: {n}"),
+    //         // None => "Pas encore notée",
+    //         None => String::from("pas encore notée"),
+    //     }
+    // }
 
-    let etiquette_note1 = etiquette(Some(20));
-    let etiquette_note2 = etiquette(Some(9));
-    let etiquette_note3 = etiquette(None);
+    // let etiquette_note1 = etiquette(Some(20));
+    // let etiquette_note2 = etiquette(Some(9));
+    // let etiquette_note3 = etiquette(None);
 
-    println!("{etiquette_note1}");
-    println!("{etiquette_note2}");
-    println!("{etiquette_note3}");
+    // println!("{etiquette_note1}");
+    // println!("{etiquette_note2}");
+    // println!("{etiquette_note3}");
     // Contraintes :
     //   - un seul `match`, qui est la DERNIÈRE EXPRESSION de la fonction
     //   - aucun `return`, aucune variable intermédiaire
@@ -263,14 +263,31 @@ fn main() {
     // -----------------------------------------------------------------
     // EX. 7 — `if let` : ce que tu gagnes, ce que tu perds   [ch. 6.3]
     // -----------------------------------------------------------------
+    let super_option: Option<u32> = Some(17);
+    // let super_option: Option<u32> = None;
+
+    // match super_option {
+    //     Some(val) => println!("Quel joli nombre: {}", val),
+    //     _ => (),
+    // }
+
+    if let Some(val) = super_option {
+        println!("Quel joli nombre: {}", val);
+    } else {
+        println!("y'a pas de nombre c'est triste");
+    }
+
     //   a) Écris un `match` sur une `Option<u32>` qui n'agit QUE sur
     //      `Some`, avec un bras `_ => ()`
     //   b) Réécris-le en `if let`. Lance `cargo clippy` sur la version
     //      (a) : que te dit-il ?
+    //      warning: you seem to be trying to use `match` for destructuring a single pattern. Consider using `if let`
     //   c) Ajoute un `else` à ton `if let`
     //
     // Question : en passant de (a) à (b), quelle garantie du compilateur
     //            as-tu abandonnée ? Dans quel cas ça te coûtera cher ?
+    // Je ne sais pas trop j'ai pas l'impression que le if let simple me donne réellement une garantie.
+    // Ici dans mon exemple Some(val) rattrape toutes les valeurs et else récupère None donc je vois pas en quoi c'est plus dangereux que le if let simple
 
     // -----------------------------------------------------------------
     // EX. 8 — `let ... else`                                 [ch. 6.3]
@@ -278,16 +295,57 @@ fn main() {
     // Écris `volume_latte(b: Boisson) -> Option<u32>` qui renvoie le
     // volume UNIQUEMENT si la boisson est un Latte.
     //
+    impl Boisson {
+        // version if let ... else
+        // fn volume_latte(b: Boisson) -> Option<u32> {
+        //     if let Boisson::Latte(volume, _) = b {
+        //         Some(volume)
+        //     } else {
+        //         None
+        //     }
+        // }
+
+        // version let ... else
+        fn volume_latte(&self) -> Option<u32> {
+            let Boisson::Latte(volume, _) = self else {
+                // 0 // expected !, found i32 E0308
+                return None;
+            };
+
+            Some(*volume)
+        }
+
+        fn mention_volume(&self) {
+            let volume = Self::volume_latte(self);
+
+            match volume {
+                Some(vol) => println!("Volume de ma super boisson: {vol}"),
+                None => println!("Volume non disponible"),
+            }
+        }
+    }
+
+    let cafe_latte = Boisson::Latte(200, false);
+    let cafe_allonge = Boisson::Allonge { eau_ml: 150 };
+
+    cafe_latte.mention_volume();
+    cafe_allonge.mention_volume();
+
     //   a) Version avec `if let ... else`
     //   b) Version avec `let ... else`
     //   c) Dans la version (b), remplace le contenu du bloc `else` par
     //      une simple valeur (ex. `0`) au lieu de `return None`.
     //      [PRÉDIS] est-ce que ça compile ? Vérifie et note l'erreur.
+    //     Ca ne fonctionnera pas il faudrait que je renvoie Some(0)
+    //     le type u32 ne correspond pas à la signature de la fonction qui doit retourner Option<u32>
+    //     confirmé: expected Option<u32>, found i32
     //
     // Question : quelle contrainte pèse sur le bloc `else` d'un
     //            `let else`, et POURQUOI est-elle logiquement nécessaire ?
     //            (indice : que doit-il être vrai de la variable liée
     //            pour la suite du code ?)
+    // le bloc else doit forcément être divergent et donc soit retourner un break, un continue, un return ou un panic
+    // c'est nécessaire pour s'assurer que la valeur récupérée par le if est valide quand on poursuit l'exécution de la fonction
 
     // -----------------------------------------------------------------
     // EX. 9 — ⚠️ Déstructurer, c'est déplacer                [ch. 4 + 6]

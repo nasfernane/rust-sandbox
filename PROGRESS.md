@@ -801,6 +801,255 @@ type. Remède : une tuple struct par concept (`struct Email(String)`).
 
 ---
 
+## Chapitre 5.2 / 5.3 — `Debug` et blocs `impl`
+
+### Les trois façons d'afficher — `{:?}`, `{:#?}`, `dbg!`
+
+| Forme | Sortie | Flux |
+|---|---|---|
+| `{:?}` | tout sur une ligne | stdout |
+| `{:#?}` | un champ par ligne, indenté, virgule finale | stdout |
+| `dbg!(x)` | `[fichier:ligne:col] <texte de l'expression> = <valeur>` | **stderr** |
+
+- Le `#` est le drapeau **alternatif**. C'est le même que dans `{:#08x}` → `0x0000ff`
+  vu en RBE : « donne-moi la forme développée », avec un sens propre à chaque type
+  de formatage.
+- `dbg!` n'affiche **ni le nom de la variable, ni le type** : il affiche
+  l'**emplacement** et le **texte de l'expression telle qu'écrite**. Preuve :
+  `dbg!(2 + 3 * 4)` → `[dbg.rs:17:5] 2 + 3 * 4 = 14`. C'est possible parce que
+  `dbg!` est une **macro** : elle reçoit le code source, pas une valeur.
+- `dbg!` formate en interne avec `{:#?}` — inutile de le lui demander.
+- `dbg!` **prend l'ownership** et rend la valeur **intacte** (il ne la modifie pas).
+  Pour conserver la variable : `let x = dbg!(x)` ou `dbg!(&x)`.
+- ⚠️ `dbg!` **n'est PAS retiré en compilation optimisée**. Vérifié avec `-O` : tout
+  s'affiche encore. À retirer à la main avant de livrer — ce n'est pas un
+  `console.log` qu'un build supprimerait.
+- Séparation des flux vérifiée avec `./prog > out.txt 2> err.txt` : `println!` dans
+  `out.txt`, `dbg!` dans `err.txt`. Règle Unix — **stdout pour le résultat, stderr
+  pour ce qui parle du programme**. C'est ce qui permet `cargo run > data.csv`.
+
+### Méthode ou fonction libre : le critère
+
+Une fonction va dans `impl T` **seulement si elle parle de `T`** :
+
+- elle prend un receveur (`&self`, `&mut self`, `self`) → **méthode**
+- ou elle mentionne `T` dans sa signature, typiquement en le construisant
+  (`fn depuis_fahrenheit(f: f64) -> Self`) → **fonction associée**
+
+Sinon c'est une **fonction libre** (*free function*). `etiquette(note: Option<u32>)
+-> String` n'a aucun rapport avec `Boisson` : la ranger dans `impl Boisson` serait
+la mettre au mauvais endroit, réflexe de méthode statique fourre-tout hérité de JS.
+
+- `Self` (majuscule) = le **type**. `self` (minuscule) = l'**instance**.
+- Rust autorise les `fn` **imbriquées** dans `main`. ⚠️ Elles ne capturent pas
+  l'environnement (`E0434`) — seuls les `const` et les items leur sont visibles.
+- Plusieurs blocs `impl` pour un même type sont légaux.
+
+---
+
+## Chapitre 6 — Enums, `Option`, `match`, `if let`
+
+### Un enum, c'est les trois formes de struct réunies sous un seul type
+
+| Variante | Forme | Équivalent ch. 5 |
+|---|---|---|
+| `Expresso` | *unit variant* | *unit struct* |
+| `Allonge { eau_ml: u32 }` | *struct variant* | struct à champs nommés |
+| `Latte(u32, bool)` | *tuple variant* | *tuple struct* |
+
+Le **motif reprend toujours la forme de la déclaration** — accolades pour les
+champs nommés, parenthèses pour les positions. Règle générale en Rust : un motif
+ressemble à la construction qu'il défait.
+
+### 🔴 Faux ami TS : les variantes ne sont PAS des types
+
+`Boisson` est **un seul type**. `Boisson::Latte` est un **constructeur**, pas un
+type : `fn f(x: Boisson::Latte)` et `let a: Boisson::Expresso` sont impossibles.
+
+```ts
+type Boisson = Expresso | Allonge | Latte;   // TS : Latte existe AUSSI seul
+function f(x: Latte) {}                       // légal en TS
+```
+
+L'union TS est composée de types qui gardent leur existence propre. L'enum Rust,
+non : les variantes n'existent qu'à l'intérieur.
+
+**Pourquoi un enum plutôt que trois structs ?** Deux raisons :
+1. Les types sont nominaux : avec trois structs, **aucune signature ne peut les
+   accepter toutes les trois** (il faudrait génériques ou traits). Ce n'est pas
+   « plus difficile », c'est impossible en l'état.
+2. La liste est **fermée et vérifiable** par le compilateur.
+
+### Exhaustivité — `E0004`
+
+Le compilateur ne raisonne pas sur les bras écrits, mais sur **l'ensemble des
+valeurs que le type peut prendre**. D'où le fonctionnement identique sur les
+tuples, structs imbriquées et intervalles de nombres.
+
+```
+error[E0004]: non-exhaustive patterns: `&Boisson::Chocolat` not covered
+note: `Boisson` defined here   |   ... Chocolat }   -------- not covered
+```
+
+⚠️ **Inutile de connaître les codes par cœur** : chaque erreur se termine par
+`try `rustc --explain E0004`, qui sort un cours complet hors-ligne. Habitude à
+prendre sur chaque nouveau code croisé.
+
+La vraie valeur de l'exhaustivité : **déplacer le bug vers la compilation**.
+
+| Correction | On l'apprend… | Coût |
+|---|---|---|
+| bras explicites | à la **compilation** | 30 s |
+| `_ => panic!()` | à l'**exécution**, en prod | un incident |
+| `_ => valeur` | **jamais** | un prix faux facturé |
+
+Option intermédiaire souvent meilleure que `_` : le **motif alternatif**
+`Boisson::The | Boisson::Chocolat => 350` — groupe des variantes **sans** perdre
+l'exhaustivité.
+
+### *Match ergonomics* : matcher sur `&self` lie des références
+
+Avec `self: &Boisson`, tout ce que les motifs lient est une **référence** —
+vérifié en forçant l'erreur : `eau_ml: &u32`, `vol: &u32`, `sucre: &bool`.
+Évite d'avoir à écrire `&Boisson::Allonge { ref eau_ml }`.
+
+D'où une asymétrie qui n'en est pas une :
+
+```rust
+eau_ml / 15              // pas de *  : std fournit impl Div<u32> for &u32
+if *sucre { … }          // * requis  : `if` exige un bool STRICTEMENT
+```
+
+### ⚠️⚠️ Dans un motif : tester ou lier ?
+
+```rust
+Some(20)  => …   // TESTE : est-ce exactement 20 ?
+Some(n)   => …   // LIE   : n prend la valeur, quelle qu'elle soit
+```
+
+Même syntaxe, rôles opposés. Et remplacer le littéral par un **nom** change tout
+selon sa nature :
+
+```rust
+const PARFAIT: u32 = 20;
+Some(PARFAIT)     => …   // TESTE (un const est un ITEM)
+let parfait = 20;
+Some(parfait)     => …   // LIE ! crée une variable qui masque l'autre
+```
+
+Mesuré :
+
+```
+const, note 9  -> note: 9     ✅      let, note 9  -> parfait   🔴
+const, note 20 -> parfait     ✅      let, note 20 -> parfait   🔴
+```
+
+Avec le `let`, **une note de 9 devient « parfait »**. Prolongement direct du
+`E0434` `const` vs `let` : un `const` est un item utilisable comme valeur dans un
+motif ; un nom de variable dans un motif est **toujours** une liaison.
+
+Indices laissés par `rustc` : `unreachable pattern` + `unused variable` **deux
+fois** (la vraie, et celle créée par le motif).
+
+**Règle de survie : dans un motif, toujours un littéral ou une `const` en
+MAJUSCULES** — la convention de nommage rend le piège visible à l'œil.
+
+### L'ordre des bras compte
+
+Un `match` évalue de haut en bas et **s'arrête au premier motif qui accepte**. Un
+motif qui lie accepte tout, donc tout ce qui suit est mort :
+
+```
+warning: unreachable pattern
+  Some(n)  | ------- matches all the relevant values
+  Some(20) | ^^^^^^^^ no value can reach this
+```
+
+🟠 Ce n'est qu'un **warning** : ça compile et se comporte mal en silence.
+
+### Le type du `match` est fixé par le premier bras
+
+`expected String, found &'static str` (`E0308`) : c'est le premier bras qui donne
+le type attendu. Un seul bras dynamique (`format!`) impose `String` à toute
+l'expression — un littéral ne peut pas s'aligner dessus.
+
+### `if let` / `let ... else` : la garantie perdue se mesure
+
+La perte est **proportionnelle au nombre de variantes que le `else` avale** :
+
+| Type | Ce que `else` avale | Verdict |
+|---|---|---|
+| `Option<T>` | `None`, et rien d'autre **jamais** | `if let` sans réserve |
+| `Result<T, E>` | `Err(_)`, mais l'erreur est perdue | acceptable si on s'en fiche |
+| un enum métier | N variantes, N+1 demain | **`match`** |
+
+Sur `Option`, `if let Some(v) … else …` est **rigoureusement équivalent** au
+`match` exhaustif — aucune garantie perdue. C'est pourquoi clippy pousse vers
+`if let` (lint `single_match` : *you seem to be trying to use `match` for
+destructuring a single pattern*).
+
+Démonstration sur un enum métier, en ajoutant `Chocolat` sans toucher au code :
+
+```
+match   →  error[E0004]: non-exhaustive patterns: `&Boisson::Chocolat` not covered
+if let  →  --- compilation : aucune alerte ---
+           Chocolat facture : 300 centimes      🔴 prix de l'expresso, en prod
+```
+
+**Critère de décision** : non pas « combien de bras j'écris » mais **« ce type
+peut-il gagner une variante un jour ? »**. Si oui, on veut être appelé ce jour-là.
+
+⚠️ Corollaire : `let ... else` a **exactement le même angle mort que `_`**. Son
+bloc `else` absorbe silencieusement toute variante future. L'exhaustivité ne
+protège que là où un `match` complet est écrit. Chaque `_`, chaque `if let`,
+chaque `let else` est un renoncement volontaire — légitime, mais qui doit être
+conscient.
+
+### Faux ami JS : `if` est une expression
+
+```rust
+vol * 3 + 50 + if *sucre { 50 } else { 0 }
+```
+
+Un `if` au milieu d'une addition. En JS il faudrait un ternaire (`if` y est une
+*instruction*, elle ne produit rien). D'où : les deux branches doivent avoir le
+même type, et `else` n'est pas optionnel ici — sans lui la branche manquante
+vaudrait `()`, non additionnable.
+
+### Faux ami JS : la division entière tronque
+
+`u32 / u32` donne un `u32`, **sans promotion en flottant** :
+
+```
+eau_ml = 14  ->  prix = 0 centimes      (14/15 = 0.933… en JS, 0 ici)
+eau_ml = 29  ->  prix = 1 centime       (même prix que 15)
+```
+
+### Un `match` peut mêler *move* et emprunt
+
+```rust
+match opt {
+    None      => base,                   // DÉPLACE base
+    Some(val) => format!("{base} - {val}"),  // EMPRUNTE base
+}
+```
+
+Accepté, parce qu'**un seul bras s'exécute** : le borrow checker raisonne par
+**chemin d'exécution**, pas sur le texte du programme. Même logique que le NLL du
+chapitre 4. Les deux dans le *même* bras → `E0382`.
+
+### `Option<T>` plutôt qu'une valeur sentinelle
+
+Renvoyer `String::new()` pour dire « ça ne s'applique pas » est une **sentinelle** :
+l'appelant ne peut pas distinguer « absent » de « vide », et rien ne l'oblige à y
+penser. `Option<T>` rend le cas absent **impossible à ignorer**. C'est le motif
+que le chapitre 6 sert précisément à désapprendre.
+
+(Complément : `format!` alloue toujours. Pour deux résultats connus à la
+compilation, `Option<&'static str>` fait le même travail sans allocation.)
+
+---
+
 ## Rust by Example — ch. 1 : formatted print
 
 ### Les trois façons de nommer un argument
@@ -1144,9 +1393,10 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 ## À venir
 
 - **RBE ch. 1 (fin)** : `Display`/`Debug` à la main, `write!`, `{:?}` dérivé
-- **Chapitre 5 (suite)** : 5.2 le programme d'exemple et `#[derive(Debug)]` /
-  `{:#?}` / `dbg!`, puis 5.3 blocs `impl`, méthodes vs fonctions associées
-- Chapitre 6 : enums, `Option`, `match`, `if let`
+- ✅ **Chapitre 5 terminé** (5.1 structs, 5.2 `Debug`/`dbg!`, 5.3 blocs `impl`)
+- **Chapitre 6 (en cours)** : 6.1 et 6.2 vus (enums à données, `Option`, `match`,
+  exhaustivité), 6.3 `if let` / `let else` vu — reste la série d'exercices 8 à 10
+- Chapitre 7 : modules, `mod`, `use`, visibilité
 - Chapitre 9 : gestion d'erreurs, `Result`
 - Chapitre 17 : « Rust est-il orienté objet ? », `dyn Trait`
 
@@ -1159,3 +1409,7 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
   incompatible avec un autre de même forme
 - Pourquoi `#[repr(C)]` existe-t-il, si le réordonnancement des champs fait
   gagner 33 % ? Dans quel cas payer 24 octets au lieu de 16 ?
+- ✅ *Répondu* : faut-il connaître les codes d'erreur par cœur ? → non,
+  `rustc --explain E0004` sort l'explication complète hors-ligne
+- Quand un `_` est-il légitime dans un `match` ? (piste : quand la liste est
+  vraiment ouverte, ou quand le défaut est une décision assumée et documentée)
