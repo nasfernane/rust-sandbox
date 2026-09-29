@@ -111,8 +111,8 @@ encore atteints. Disponible hors-ligne sur sa machine via `rustup doc --book`.
 Bascule décidée le 2026-09-05, après le chapitre 1 de *Rust by Example*. Motif :
 ses questions portent systématiquement sur le **pourquoi** (rôle de Cargo,
 contenu d'un binaire, raison d'être des macros), un terrain que RBE ne couvre
-pas. Position actuelle au 2026-09-19 : chapitres 1, 3, 2 et 4 terminés,
-**chapitre 5 (structs) en cours**. Le chapitre 2 (jeu de devinettes) a été fait
+pas. Position actuelle au 2026-09-29 : chapitres 1, 3, 2, 4, 5 et 6 terminés,
+**chapitre 7 (modules) en cours**. Le chapitre 2 (jeu de devinettes) a été fait
 après le 3, sur suggestion du Book lui-même pour ceux qui veulent comprendre
 avant de coder. En parallèle, *Rust by Example* chapitre 1 (formatted print).
 
@@ -144,14 +144,32 @@ Conséquences pour toi :
 
 Jalon en cours :
 
-- **Chapitre 5** (*structs*) — premier type qu'il définit lui-même. Enjeu
-  principal : les faux amis avec les classes JS/TS. Une struct ne contient que
-  des **données** ; le comportement vit dans un bloc `impl` séparé. Et les types
-  sont **nominaux** : deux structs aux mêmes champs restent incompatibles.
+- **Chapitre 7** (*modules*) — premier chapitre d'**organisation** du code, sans
+  nouveau concept mémoire. C'est un des rares endroits où son bagage JS/TS aide
+  plutôt qu'il ne gêne : `mod` et `use` ressemblent à une arborescence de modules
+  et à `import`. Signale quand même les trois divergences :
+  - la **visibilité** (`pub`) n'existe pas en JS — tout y est public dès qu'on
+    l'exporte ; en Rust c'est **privé par défaut**, y compris entre modules du
+    même crate
+  - un module **n'est pas un fichier** : `mod` déclare un nœud dans un arbre, le
+    fichier n'est qu'une façon de le ranger (d'où `mod truc;` vs `mod truc { }`)
+  - les chemins sont **absolus ou relatifs dans l'arbre du crate** (`crate::`,
+    `super::`, `self::`), pas des chemins de système de fichiers
+- Son projet n'a pour l'instant qu'un `main.rs` : le chapitre sera l'occasion de
+  découper, mais **c'est lui qui déplace le code**, pas toi.
 
 Jalons franchis : **chapitre 2** (jeu de devinettes), son premier projet Cargo.
 **Chapitre 4** (*ownership*) — le mur du parcours, passé : move/copy, references
 et borrowing, references pendantes, slices, frontières de caractères UTF-8.
+**Chapitre 5** (*structs*) — trois formes de struct, blocs `impl`, méthodes vs
+fonctions associées, typage nominal, `Debug` / `dbg!`. **Chapitre 6** (*enums et
+pattern matching*) — enums à données, `Option`, `match` exhaustif, `if let` /
+`let else`, et la conception « rendre les états illégaux irreprésentables ».
+Série de 10 exercices corrigée (bilan dans `PROGRESS.md`).
+
+Deux confusions à surveiller, corrigées plusieurs fois chacune :
+- le critère de `Copy` — ni la forme, ni la taille, mais la **ressource**
+- dans un motif : **tester** (littéral, `const`) vs **lier** (nom de variable)
 
 Notions déjà abordées hors tutoriel : package manager et rôle de Cargo, contenu
 d'un binaire (sections, désassemblage, `strings`), fonctions vs macros, rôle

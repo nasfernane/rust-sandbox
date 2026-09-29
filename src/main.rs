@@ -158,6 +158,8 @@ fn main() {
     // Latte DÉPEND de ses données.
     //
     //
+    //
+    #[derive(Debug)]
     enum Boisson {
         Expresso,
         Allonge { eau_ml: u32 },
@@ -352,20 +354,62 @@ fn main() {
     // -----------------------------------------------------------------
     // Soit une `Boisson::Latte` stockée dans une variable.
     //
+    //
     //   a) Fais un `if let Boisson::Latte(volume, sucre) = boisson`
+    //
+    let boisson = Boisson::Latte(150, true);
+    if let Boisson::Latte(volume, sucre) = boisson {
+        println!("Wow quel beau volume {} - sucre: {}", volume, sucre);
+    }
+
+    dbg!(boisson);
+
     //   b) APRÈS le `if let`, essaie de réutiliser `boisson`.
     //      [PRÉDIS] ça compile ? Pourquoi ?
-    //
+    //    ça compile car les deux champs de Latte(u32, bool) sont Copy, donc dupliqués lors du move
+
     //   c) Recommence avec `Boisson::Allonge { eau_ml }` — même question.
+    //    je pensais que ça ne compilerait pas car les données de Boisson::Allonge est une struct qui
+    //    n'implémente pas Copy, mais ça fonctionne
+
+    let boisson2 = Boisson::Allonge { eau_ml: 150 };
+
+    if let Boisson::Allonge { eau_ml } = boisson2 {
+        println!("Wow quel beau volume {}", eau_ml);
+    }
+
+    match boisson2 {
+        Boisson::Allonge { eau_ml } => println!("Boisson 2 volume {}", eau_ml),
+        _ => (),
+    }
+
     //
     //   d) Refais (a) avec une variante qui contient une `String`.
     //      Cette fois ça refuse. Code d'erreur : E0___
     //      `rustc` propose DEUX corrections dans son `help`. Trouve-les
     //      et dis ce qui les distingue.
     //
+    #[derive(Debug)]
+    enum Beverage {
+        Expresso,
+        Allonge { nom_client: String },
+        Latte(u32, bool),
+        The,
+    }
+
+    let big_beverage = Beverage::Allonge {
+        nom_client: String::from("Jean-Philippe"),
+    };
+
+    if let Beverage::Allonge { nom_client } = big_beverage {
+        println!("Boisson pour {}", nom_client);
+    }
+
+    // dbg!(big_beverage);
+    //
     // Question : pourquoi (a) et (d) ne se comportent-ils pas pareil,
     //            alors que le motif a exactement la même forme ?
-
+    // (d) contient un type String qui n'implémente pas Copy
     // -----------------------------------------------------------------
     // EX. 10 — Conception : enum ou struct ?                 [ch. 5 + 6]
     // -----------------------------------------------------------------
@@ -373,11 +417,45 @@ fn main() {
     // struct, un enum, ou les deux imbriqués — et justifie en une ligne :
     //
     //   1. un point dans un plan (x, y)
+    //    Ici j'utiliserais une structure, voir un tuple struct. C'est des données à lier ensemble, pas de variations
+    //    le tuple pourrait suffir mais il y'a le risque d'intervertir x et y
     //   2. l'état d'une commande : en attente / expédiée avec un numéro
     //      de suivi / annulée avec un motif
+    //    => Pour ce cas je ferais une enum, mais un même type avec des variations
     //   3. un utilisateur avec un nom, un email, et un statut qui est
     //      soit actif, soit suspendu jusqu'à une date
+    //    => Ici on est plus sur une entité avec des données qui sont liées
+    //     Je ferais une structure avec le statut qui est un Enum
     //
     // Implémente le n°2, et écris une méthode `resume(&self) -> String`
     // qui produit une phrase différente selon l'état.
+    enum EtatCommande {
+        EnAttente,
+        Expedie { num_suivi: String },
+        Annule(String),
+    }
+
+    impl EtatCommande {
+        fn resume(&self) -> String {
+            match self {
+                Self::EnAttente => String::from("La commande est en attente"),
+                Self::Expedie { num_suivi } => {
+                    format!("La commande n°{num_suivi} a été expédiée")
+                }
+                Self::Annule(motif) => {
+                    format!("Commande annulée pour la raison suivante: {motif}")
+                }
+            }
+        }
+    }
+
+    let etat_commande1 = EtatCommande::EnAttente;
+    let etat_commande2 = EtatCommande::Expedie {
+        num_suivi: String::from("1337"),
+    };
+    let etat_commande3 = EtatCommande::Annule(String::from("Rupture de stock"));
+
+    println!("{}", etat_commande1.resume());
+    println!("{}", etat_commande2.resume());
+    println!("{}", etat_commande3.resume());
 }

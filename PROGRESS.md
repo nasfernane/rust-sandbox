@@ -43,7 +43,9 @@
 | 3 | Common Programming Concepts | ✅ fait |
 | 2 | Programming a Guessing Game | ✅ fait |
 | 4 | Understanding Ownership | ✅ fait (references, slices compris) |
-| 5 | Using Structs to Structure Related Data | 🔄 **en cours** |
+| 5 | Using Structs to Structure Related Data | ✅ fait (5.1 à 5.3) |
+| 6 | Enums and Pattern Matching | ✅ fait (6.1 à 6.3) |
+| 7 | Managing Growing Projects (modules) | ⏭️ **suivant** |
 
 ### Rust by Example
 
@@ -417,6 +419,41 @@ pas la copie profonde, il oblige à l'écrire.
 - `clone()` force la copie **profonde** (le tampon du tas aussi) — coût réel,
   à envisager consciemment.
 - Erreur associée : `error[E0382]: borrow of moved value`
+
+#### ⚠️ Le mot « move » a deux sens — ne pas les mélanger
+
+Ambiguïté relevée le 2026-09-28, à l'origine d'une contradiction apparente.
+
+| Niveau | Ce que « move » désigne | Vrai pour un type `Copy` ? |
+|---|---|---|
+| **machine** | la recopie des bits (`memcpy`) | **oui, toujours** |
+| **langage** | recopie **+ invalidation de la source** | **non** |
+
+Rust n'emploie le terme que dans le second sens : un type `Copy` a une *copy
+semantics*, un type non-`Copy` une *move semantics*. Ce sont **deux régimes**,
+pas un régime avec une option.
+
+D'où les deux phrases, toutes deux correctes à leur niveau :
+- « les bits sont recopiés dans les deux cas » (machine)
+- « il n'y a pas de *move* sur un type `Copy` » (langage)
+
+Vérifié sur les adresses :
+
+```
+champ dans la valeur d'origine : 0x16cf527d0
+champ lie par le motif         : 0x16cf52804   <- recopie effective
+source encore lisible -> 150                   <- non invalidee
+
+s1 -> tampon tas a 0x1037a5cb0
+s2 -> tampon tas a 0x1037a5cb0                 <- MEME tampon apres un move
+```
+
+Le second bloc montre pourquoi l'invalidation existe : le *move* d'une `String`
+ne duplique **que** les 24 octets `ptr`/`len`/`cap`, le tampon reste unique — deux
+propriétaires le libéreraient deux fois.
+
+**Formulation de référence** : l'opération machine est la même ; ce qui change est
+le **verdict sur la source**, et c'est ce verdict qui donne son nom à l'opération.
 
 ### ⚠️⚠️ Le critère de `Copy` : la RESSOURCE, pas la taille
 
@@ -1048,6 +1085,100 @@ que le chapitre 6 sert précisément à désapprendre.
 (Complément : `format!` alloue toujours. Pour deux résultats connus à la
 compilation, `Option<&'static str>` fait le même travail sans allocation.)
 
+### ⚠️⚠️ Conception : rendre les états illégaux **irreprésentables**
+
+C'est la conclusion du chapitre 6, et la vraie raison d'être des enums à données.
+Un enum ne se choisit pas parce qu'il y a plusieurs cas — il se choisit parce
+qu'on veut **interdire les autres**.
+
+Même besoin, « actif, ou suspendu jusqu'à une date », deux modélisations :
+
+```rust
+// A. le réflexe JS : tout à plat
+struct Utilisateur { actif: bool, suspendu_jusqu_a: Option<Date> }
+
+// B. la donnée vit DANS l'état qui la justifie
+enum Statut { Actif, Suspendu { jusqu_a: Date } }
+struct Utilisateur { statut: Statut }
+```
+
+Compté sur une date simplifiée à 256 valeurs :
+
+```
+struct plate : 514 etats representables
+enum         : 257 etats representables
+=> 257 combinaisons absurdes possibles avec la struct plate
+```
+
+**La moitié des états de A n'ont aucun sens, et pourtant ils compilent** :
+
+```
+actif=true  + suspendu_jusqu_a=Some(42)  -> compile. Actif ET suspendu ?
+actif=false + suspendu_jusqu_a=None      -> compile. Suspendu jusqu'a quand ?
+
+avec l'enum, ces deux lignes sont INECRIVABLES.
+```
+
+En A, la cohérence repose sur la discipline du développeur — à vérifier partout,
+à la main, pour toujours. En B elle est **structurelle** : `jusqu_a` n'existe que
+dans la variante qui lui donne un sens, l'incohérence n'a aucune forme dans
+laquelle s'écrire.
+
+### Grille de décision struct / enum / les deux
+
+| Besoin | Outil | Pourquoi |
+|---|---|---|
+| point `(x, y)` | **struct** | des données à lier, aucune variation |
+| état d'une commande | **enum** | un même type, plusieurs formes exclusives |
+| utilisateur + statut | **les deux** | entité (struct) dont un champ est l'état (enum) |
+
+- *tuple struct* acceptable pour `Point(f64, f64)` **si** l'ordre est
+  universellement admis ; sinon champs nommés — le piège des paramètres
+  positionnels de même type (ch. 5) s'applique aussi aux champs.
+
+### Règle de typage : un identifiant n'est pas un nombre
+
+**Si on ne fait jamais d'arithmétique dessus, ce n'est pas un nombre.**
+
+`num_suivi: u32` est un mauvais choix : `1Z999AA10123456784` (UPS),
+`6A12345678901` (Colissimo) — lettres, zéros de tête significatifs, longueur
+variable. Idem numéro de téléphone, code postal, SIRET, IBAN. → `String`.
+
+---
+
+## Série d'exercices ch. 5–6 (2026-09-26 → 29) — 10/10
+
+Écrits dans `src/main.rs`, corrigés un par un.
+
+| # | Notion | Verdict |
+|---|---|---|
+| 1 | méthode / fonction associée / `Self` | ✅ |
+| 2 | les trois receveurs, `E0382` après `consommer(self)` | ✅ |
+| 3 | `{:?}` / `{:#?}` / `dbg!` | 2 erreurs redressées |
+| 4 | enum à données, les 3 formes de variante | réponse conceptuelle reprise |
+| 5 | exhaustivité, `E0004`, le coût de `_` | ✅ |
+| 6 | `match` sur `Option`, tester vs lier | ✅ |
+| 7 | `if let` : la garantie abandonnée | ✅ (question mal calibrée de ma part) |
+| 8 | `let ... else`, divergence du bloc `else` | (c) testé à côté, puis corrigé |
+| 9 | déstructurer = déplacer, déplacement partiel | (c) confusion forme/type |
+| 10 | conception enum vs struct | ✅ |
+
+**Acquis solides** : `match` exhaustif par réflexe (sans `_`), et le fait de
+dérouler une correction jusqu'au bout — à l'EX8, passer `&self` a été propagé
+jusqu'au type de retour, puis jusqu'à `Option<u32>` au lieu de `Option<&u32>`.
+
+**Les deux points qui ont demandé le plus d'allers-retours** — à relire avant
+tout quizz :
+1. le critère `Copy` : ni la forme, ni la taille, **la ressource**
+2. dans un motif : **tester** (littéral, `const`) vs **lier** (nom de variable)
+
+### Dettes laissées volontairement dans `src/main.rs`
+
+- EX9 (c) : la phrase « `Allonge` est une struct qui n'implémente pas `Copy` »
+  reste à reformuler — `eau_ml` est un `u32`, donc `Copy` : même cas que (b)
+- `single_match` signalé par clippy sur le `match` de l'EX9 (`--fix` le corrige)
+- variantes `Expresso`, `The`, `Latte` de `Boisson`/`Beverage` jamais construites
+
 ---
 
 ## Rust by Example — ch. 1 : formatted print
@@ -1394,9 +1525,10 @@ Vérifié expérimentalement : `bool` 1 o, `char` 4 o, `i32` 4 o, `i64` 8 o,
 
 - **RBE ch. 1 (fin)** : `Display`/`Debug` à la main, `write!`, `{:?}` dérivé
 - ✅ **Chapitre 5 terminé** (5.1 structs, 5.2 `Debug`/`dbg!`, 5.3 blocs `impl`)
-- **Chapitre 6 (en cours)** : 6.1 et 6.2 vus (enums à données, `Option`, `match`,
-  exhaustivité), 6.3 `if let` / `let else` vu — reste la série d'exercices 8 à 10
-- Chapitre 7 : modules, `mod`, `use`, visibilité
+- ✅ **Chapitre 6 terminé** (6.1 enums et `Option`, 6.2 `match`, 6.3 `if let` /
+  `let else`) + série d'exercices 1 à 10 corrigée
+- **Chapitre 7 (à venir)** : modules, `mod`, `use`, visibilité — premier chapitre
+  d'organisation du code, pas de nouveau concept mémoire
 - Chapitre 9 : gestion d'erreurs, `Result`
 - Chapitre 17 : « Rust est-il orienté objet ? », `dyn Trait`
 
